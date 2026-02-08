@@ -1,0 +1,93 @@
+{# templates/home/sections/_catalogue_preview.html.twig #}
+<section id="catalogue" class="py-4 py-lg-5">
+	<div class="container">
+
+		<div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+			<div>
+				<h2 class="h3 fw-bold mb-1">Catalogue en ligne (accès client)</h2>
+				<div class="text-body-secondary">Aperçu de l’expérience catalogue (prix/stock masqués).</div>
+			</div>
+
+			<div class="d-flex gap-2">
+				{% if app.user %}
+					<a class="btn btn-primary rounded-pill fw-semibold px-3" href="#">Accéder</a>
+				{% else %}
+					<a class="btn btn-outline-secondary rounded-pill fw-semibold px-3" href="#">Se connecter</a>
+					<a class="btn btn-primary rounded-pill fw-semibold px-3" href="#">Créer un compte</a>
+				{% endif %}
+			</div>
+		</div>
+
+		{% set preview_items = [
+            {'title':'Plaquettes de frein avant', 'meta':'Compatibles: Toyota Hilux 2016–2022', 'stock':'En stock', 'price':'—'},
+            {'title':'Filtre à huile', 'meta':'Réf. équivalente: 90915-YZZ', 'stock':'Commande 24/48h', 'price':'—'},
+            {'title':'Batterie 70Ah', 'meta':'Garantie: 12 mois', 'stock':'En stock', 'price':'—'},
+            {'title':'Amortisseur arrière', 'meta':'OEM / Équivalent disponible', 'stock':'Sur commande', 'price':'—'},
+            {'title':'Kit embrayage', 'meta':'Vérification VIN requise', 'stock':'En stock', 'price':'—'},
+            {'title':'Capteur ABS', 'meta':'Côté: avant droit', 'stock':'En stock', 'price':'—'}
+        ] %}
+
+		<div class="card border-0 shadow-sm rounded-4 overflow-hidden position-relative">
+			<div class="card-body p-4">
+
+				<div class="{% if not app.user %}blur-sm{% endif %}">
+					<div class="row g-3">
+						{% for it in preview_items %}
+							<div class="col-md-6 col-lg-4">
+								<div class="card h-100 rounded-4 shadow-sm">
+									<div class="card-body">
+										<div class="fw-bold mb-1">{{ it.title }}</div>
+										<div class="small text-body-secondary mb-2">{{ it.meta }}</div>
+
+										<div class="d-flex justify-content-between align-items-center mb-3">
+											<span class="badge rounded-pill text-bg-light border">{{ it.stock }}</span>
+											<span class="fw-bold">Prix:
+												{{ it.price }}</span>
+										</div>
+
+										<div class="d-flex gap-2">
+											<button class="btn btn-outline-secondary rounded-pill w-50" type="button">Détails</button>
+											<button class="btn btn-outline-primary rounded-pill w-50" type="button">Ajouter</button>
+										</div>
+									</div>
+								</div>
+							</div>
+						{% endfor %}
+					</div>
+				</div>
+
+				{% if not app.user %}
+					<div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center p-3" style="background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.92));">
+						<div class="card border-0 shadow rounded-4" style="max-width:560px;">
+							<div class="card-body p-4">
+								<div class="d-flex gap-3">
+									<div class="flex-shrink-0">
+										<div class="rounded-3 bg-primary-subtle border d-flex align-items-center justify-content-center" style="width:46px;height:46px;">🔒</div>
+									</div>
+									<div>
+										<h3 class="h5 fw-bold mb-1">Catalogue privé</h3>
+										<p class="text-body-secondary mb-3">
+											Connectez-vous pour afficher
+											<strong>prix</strong>,
+											<strong>stock</strong>
+											et
+											<strong>références exactes</strong>.
+										</p>
+										<div class="d-flex flex-wrap gap-2">
+											<a class="btn btn-primary rounded-pill fw-semibold px-4" href="#">Se connecter</a>
+											<a class="btn btn-outline-secondary rounded-pill fw-semibold px-4" href="#">Créer un compte</a>
+											<a class="btn btn-outline-secondary rounded-pill fw-semibold px-4" href="#devis">Devis sans compte</a>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				{% endif %}
+
+			</div>
+		</div>
+
+	</div>
+</section>
+

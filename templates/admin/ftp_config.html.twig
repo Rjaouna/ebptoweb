@@ -1,0 +1,269 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Configuration FTP
+{% endblock %}
+
+{% block body %}
+	<div class="container py-4">
+		<div class="d-flex align-items-center justify-content-between mb-3">
+			<div>
+				<h1 class="h3 mb-1">Configuration FTP</h1>
+				<div class="text-muted">Gère la connexion FTP/FTPS et le fichier CSV utilisé.</div>
+			</div>
+
+			<div>
+				{% set status = cfg.lastTestOk %}
+				{% if status is null %}
+					<span class="badge text-bg-secondary">Jamais testé</span>
+				{% elseif status %}
+					<span class="badge text-bg-success">Connexion OK</span>
+				{% else %}
+					<span class="badge text-bg-danger">Connexion KO</span>
+				{% endif %}
+			</div>
+		</div>
+
+		{# Flash messages #}
+		{% for label, messages in app.flashes %}
+			{% for message in messages %}
+				<div class="alert alert-{{ label }} alert-dismissible fade show" role="alert">
+					{{ message }}
+					<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+				</div>
+			{% endfor %}
+		{% endfor %}
+
+		<div
+			class="row g-4">
+			{# ==== FORM CARD ==== #}
+			<div class="col-12 col-lg-7">
+				<div class="card shadow-sm">
+					<div class="card-header bg-white">
+						<div class="fw-semibold">Paramètres</div>
+					</div>
+
+					<div class="card-body">
+
+						{{ form_start(form, {
+            action: path('admin_ftp_config'),
+            method: 'POST',
+            attr: { 'data-turbo': 'false', novalidate: 'novalidate' }
+          }) }}
+
+						{# ✅ IMPORTANT: erreurs globales (CSRF, mapping, etc.) #}
+						<div class="mb-3">
+							{{ form_errors(form) }}
+						</div>
+
+						<div class="row g-3">
+							<div class="col-12">
+								{{ form_label(form.host) }}
+								{{ form_widget(form.host, { attr: { class: 'form-control', placeholder: 'ex: ftps5.uk.cloudlogin.co' } }) }}
+								{{ form_errors(form.host) }}
+							</div>
+
+							<div class="col-6">
+								{{ form_label(form.port) }}
+								{{ form_widget(form.port, { attr: { class: 'form-control' } }) }}
+								{{ form_errors(form.port) }}
+							</div>
+
+							<div class="col-6 d-flex align-items-end">
+								<div class="form-check">
+									{{ form_widget(form.secure, { attr: { class: 'form-check-input' } }) }}
+									{{ form_label(form.secure, null, { label_attr: { class: 'form-check-label' } }) }}
+									{{ form_errors(form.secure) }}
+									<div class="form-text">Active FTPS (TLS). Désactive si FTP simple.</div>
+								</div>
+							</div>
+
+							<div class="col-12">
+								{{ form_label(form.username) }}
+								{{ form_widget(form.username, { attr: { class: 'form-control', placeholder: 'Utilisateur FTP' } }) }}
+								{{ form_errors(form.username) }}
+							</div>
+
+							<div class="col-12">
+								{{ form_label(form.password) }}
+								{{ form_widget(form.password, { attr: { class: 'form-control', placeholder: 'Laisser vide pour conserver' } }) }}
+								{{ form_errors(form.password) }}
+								<div class="form-text">
+									Le mot de passe est stocké
+									<strong>chiffré</strong>. Il n’est jamais affiché.
+								</div>
+							</div>
+
+							<div class="col-12">
+								{{ form_label(form.remoteDir) }}
+								{{ form_widget(form.remoteDir, { attr: { class: 'form-control', placeholder: 'ex: /exports' } }) }}
+								{{ form_errors(form.remoteDir) }}
+							</div>
+
+							<div class="col-6">
+								{{ form_label(form.timeoutMs) }}
+								{{ form_widget(form.timeoutMs, { attr: { class: 'form-control' } }) }}
+								{{ form_errors(form.timeoutMs) }}
+								<div class="form-text">Ex: 20000 = 20 secondes</div>
+							</div>
+
+							<div class="col-6">
+								{{ form_label(form.csvName) }}
+								{{ form_widget(form.csvName, { attr: { class: 'form-control', placeholder: 'items.csv' } }) }}
+								{{ form_errors(form.csvName) }}
+							</div>
+						</div>
+
+						<hr class="my-4">
+
+						<div class="d-flex gap-2">
+							<button type="submit" class="btn btn-primary">
+								Enregistrer
+							</button>
+
+							<button type="button" class="btn btn-outline-secondary" id="btn-test-ftp" data-test-url="{{ path('admin_ftp_test') }}">
+								Tester la connexion
+							</button>
+
+							<span class="ms-auto small text-muted d-flex align-items-center">
+								<span id="test-spinner" class="spinner-border spinner-border-sm me-2 d-none" role="status"></span>
+								<span id="test-hint">Test non lancé</span>
+							</span>
+						</div>
+
+						{# ✅ IMPORTANT: rend le CSRF token et champs cachés #}
+						{{ form_rest(form) }}
+						{{ form_end(form, { render_rest: false }) }}
+
+					</div>
+				</div>
+			</div>
+
+			{# ==== STATUS CARD ==== #}
+			<div class="col-12 col-lg-5">
+				<div class="card shadow-sm">
+					<div class="card-header bg-white">
+						<div class="fw-semibold">État de connexion</div>
+					</div>
+
+					<div class="card-body">
+						<div class="d-flex align-items-center gap-2 mb-2">
+							<span class="text-muted">Statut :</span>
+
+							<span id="status-badge">
+								{% if cfg.lastTestOk is null %}
+									<span class="badge text-bg-secondary">Jamais testé</span>
+								{% elseif cfg.lastTestOk %}
+									<span class="badge text-bg-success">OK</span>
+								{% else %}
+									<span class="badge text-bg-danger">KO</span>
+								{% endif %}
+							</span>
+						</div>
+
+						<div class="mb-2">
+							<div class="text-muted small">Dernier test :</div>
+							<div id="status-date" class="fw-semibold">
+								{% if cfg.lastTestAt %}
+									{{ cfg.lastTestAt|date('Y-m-d H:i:s') }}
+								{% else %}
+									—
+								{% endif %}
+							</div>
+						</div>
+
+						<div class="mb-3">
+							<div class="text-muted small">Message :</div>
+							<div id="status-message" class="border rounded p-2 bg-light" style="min-height: 60px;">
+								{{ cfg.lastTestMessage ?? '—' }}
+							</div>
+						</div>
+
+						<div class="alert alert-info mb-0">
+							<div class="fw-semibold">Conseil</div>
+							<div class="small">
+								Si le test échoue, vérifie : FTPS (TLS), port, dossier distant, et active le mode passif côté serveur.
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	 <script>
+	(function () {
+	  const btn = document.getElementById('btn-test-ftp');
+	  if (!btn) return;
+	
+	  const testUrl = btn.dataset.testUrl;
+	  const spinner = document.getElementById('test-spinner');
+	  const hint = document.getElementById('test-hint');
+	  const badgeWrap = document.getElementById('status-badge');
+	  const dateEl = document.getElementById('status-date');
+	  const msgEl = document.getElementById('status-message');
+	
+	  function getFormValue(name) {
+	    const el = document.querySelector(`[name="${name}"]`);
+	    if (!el) return null;
+	    if (el.type === 'checkbox') return el.checked;
+	    return el.value;
+	  }
+	
+	  function setBadge(ok) {
+	    if (ok === null) {
+	      badgeWrap.innerHTML = '<span class="badge text-bg-secondary">Jamais testé</span>';
+	      return;
+	    }
+	    badgeWrap.innerHTML = ok
+	      ? '<span class="badge text-bg-success">OK</span>'
+	      : '<span class="badge text-bg-danger">KO</span>';
+	  }
+	
+	  btn.addEventListener('click', async () => {
+	    spinner.classList.remove('d-none');
+	    hint.textContent = 'Test en cours...';
+	    btn.disabled = true;
+	
+	    try {
+	      const payload = {
+	        host: getFormValue('ftp_connection[host]'),
+	        port: getFormValue('ftp_connection[port]'),
+	        username: getFormValue('ftp_connection[username]'),
+	        password: getFormValue('ftp_connection[password]'),
+	        secure: getFormValue('ftp_connection[secure]'),
+	        remoteDir: getFormValue('ftp_connection[remoteDir]'),
+	        timeoutMs: getFormValue('ftp_connection[timeoutMs]')
+	      };
+	
+	      const res = await fetch(testUrl, {
+	        method: 'POST',
+	        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+	        body: JSON.stringify(payload)
+	      });
+	
+	      const data = await res.json().catch(() => null);
+	
+	      if (!res.ok || !data) {
+	        setBadge(false);
+	        msgEl.textContent = 'Erreur serveur pendant le test.';
+	      } else {
+	        setBadge(!!data.ok);
+	        msgEl.textContent = data.message || (data.ok ? 'Connexion FTP OK' : 'Connexion FTP KO');
+	      }
+	
+	      dateEl.textContent = new Date().toISOString().slice(0, 19).replace('T', ' ');
+	      hint.textContent = 'Test terminé';
+	    } catch (e) {
+	      setBadge(false);
+	      msgEl.textContent = 'Exception JS: ' + (e?.message || e);
+	      dateEl.textContent = new Date().toISOString().slice(0, 19).replace('T', ' ');
+	      hint.textContent = 'Test terminé';
+	    } finally {
+	      spinner.classList.add('d-none');
+	      btn.disabled = false;
+	    }
+	  });
+	})();
+	</script>
+{% endblock %}
+

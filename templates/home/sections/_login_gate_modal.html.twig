@@ -1,0 +1,29 @@
+{# templates/home/sections/_login_gate_modal.html.twig #}
+<div class="modal fade" id="loginGateModal" tabindex="-1" aria-hidden="true">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content rounded-4 border-0 shadow">
+			<div class="modal-header">
+				<h5 class="modal-title fw-bold">Connexion requise</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+			</div>
+			<div class="modal-body">
+				<p class="text-body-secondary mb-3">
+					Pour voir
+					<strong>prix</strong>,
+					<strong>stock</strong>
+					et
+					<strong>références</strong>,
+						                    connectez-vous ou créez un compte client.
+				</p>
+				<div class="d-flex flex-wrap gap-2">
+					<a class="btn btn-primary rounded-pill fw-semibold px-4" href="#">Se connecter</a>
+					<a class="btn btn-outline-secondary rounded-pill fw-semibold px-4" href="#">Créer un compte</a>
+					<a class="btn btn-outline-secondary rounded-pill fw-semibold px-4" href="#devis" data-bs-dismiss="modal">
+						Devis sans compte
+					</a>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+

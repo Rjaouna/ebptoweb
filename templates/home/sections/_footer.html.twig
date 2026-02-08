@@ -1,0 +1,44 @@
+{# templates/home/sections/_footer.html.twig #}
+<footer class="border-top bg-body-tertiary">
+	<div class="container py-4">
+		<div class="row g-3">
+			<div class="col-lg-5">
+				<div class="fw-bold">{{ app_name|default('AutoParts Pro') }}</div>
+				<div class="small text-body-secondary">
+					Catalogue privé • Pièces auto • Livraison & retrait
+				</div>
+			</div>
+
+			<div class="col-lg-3">
+				<div class="fw-bold mb-2">Liens</div>
+				<div class="vstack gap-1 small">
+					<a href="#catalogue" class="text-decoration-none">Catalogue</a>
+					<a href="#devis" class="text-decoration-none">Devis</a>
+					<a href="#contact" class="text-decoration-none">Contact</a>
+				</div>
+			</div>
+
+			<div class="col-lg-4">
+				<div class="fw-bold mb-2">Espace client</div>
+				<div class="d-flex gap-2 flex-wrap">
+					{% if app.user %}
+						<a class="btn btn-primary btn-sm rounded-pill px-3" href="#">Catalogue</a>
+						<a class="btn btn-outline-secondary btn-sm rounded-pill px-3" href="#">Déconnexion</a>
+					{% else %}
+						<a class="btn btn-outline-secondary btn-sm rounded-pill px-3" href="#">Connexion</a>
+						<a class="btn btn-primary btn-sm rounded-pill px-3" href="#">Créer un compte</a>
+					{% endif %}
+				</div>
+			</div>
+		</div>
+
+		<hr class="my-3">
+
+		<div class="small text-body-secondary">
+			©
+			{{ "now"|date("Y") }}
+			— Tous droits réservés
+		</div>
+	</div>
+</footer>
+
