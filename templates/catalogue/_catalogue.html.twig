@@ -2,7 +2,7 @@
 
 <div class="container-fluid">
 
-  <nav class="navbar glass border-bottom mb-3" style="position:sticky;top:0;z-index:1030;">
+  <nav class="navbar glass border-bottom my-3" style="position:sticky;top:0;z-index:1030;">
     <div class="container-fluid py-2 gap-3 align-items-center">
       <div class="d-flex flex-column lh-sm">
         <div class="fw-bold" style="font-size:1.05rem;">{{ pageTitle }}</div>
@@ -10,31 +10,42 @@
       </div>
 
       <div class="flex-grow-1">
-        <div class="input-group input-group-lg shadow-sm">
+        <div class="input-group input-group-lg shadow-sm search-group">
           <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
-          <input id="qTop" type="search" class="form-control" placeholder="Rechercher une pièce, marque, véhicule, UID…">
+          <input id="qTop" type="search" class="form-control" placeholder="Rechercher une pièce, marque, véhicule, référence…">
           <button id="btnClearQ" class="btn btn-outline-secondary" type="button" title="Effacer">
             <i class="bi bi-x-lg"></i>
           </button>
         </div>
       </div>
 
-      <div class="d-flex align-items-center gap-2 ms-auto flex-shrink-0">
+      <div class="d-flex align-items-center gap-2 ms-auto flex-shrink-0 d-none">
+        <a href="{{ path('cart_index') }}"
+           id="cartBtn"
+           class="btn btn-primary position-relative btn-cart">
+          <i class="bi bi-cart3"></i>
+          <span id="cartBadge"
+                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-secondary">
+            {{ _cartCount|default(0) }}
+          </span>
+        </a>
+
         <button class="btn btn-outline-primary d-lg-none" type="button"
                 data-bs-toggle="offcanvas" data-bs-target="#filtersCanvas" aria-label="Filtres">
           <i class="bi bi-sliders2"></i>
         </button>
-
       </div>
     </div>
   </nav>
 
   <div class="row g-4">
-    <aside class="col-lg-3 d-none d-lg-block"><div id="filtersDesktopMount"></div></aside>
+    <aside class="col-lg-3 d-none d-lg-block">
+      <div id="filtersDesktopMount"></div>
+    </aside>
 
     <section class="col-lg-9">
-      <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
-        <div>
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2 bg-white p-2 rounded">
+        <div class="">
           <div class="fw-semibold">
             Résultats : <span id="count">0</span>
             <span class="text-muted fw-normal">/ <span id="total">0</span></span>
@@ -103,225 +114,7 @@
 {% block stylesheets %}
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
-  <style>
-    :root{
-      --card-border: rgba(15, 23, 42, 0.10);
-      --shadow-soft: 0 12px 26px rgba(2, 6, 23, 0.08);
-      --shadow-hover: 0 18px 40px rgba(2, 6, 23, 0.12);
-
-      --blue-soft: rgba(13, 110, 253, 0.10);
-      --blue-ink: #0b5ed7;
-
-      --orange-soft: rgba(253, 126, 20, 0.12);
-      --orange-ink: #c05600;
-
-      --slate: rgba(15,23,42,.72);
-    }
-
-    /* Fond moderne */
-    body{
-      background:
-        radial-gradient(1200px 600px at 20% 0%, rgba(13,110,253,.10), transparent 55%),
-        radial-gradient(1000px 500px at 90% 10%, rgba(253,126,20,.10), transparent 55%),
-        #f7f8fb;
-    }
-
-    /* Navbar glass */
-    .navbar.glass{
-      background: rgba(255,255,255,.72);
-      backdrop-filter: blur(14px);
-      border-bottom: 1px solid rgba(15,23,42,.08) !important;
-    }
-
-    /* Search */
-    .input-group-lg .input-group-text{
-      border-right: 0;
-    }
-    .input-group-lg .form-control{
-      border-left: 0;
-    }
-    .input-group-lg .form-control:focus{
-      box-shadow: 0 0 0 .25rem rgba(13,110,253,.15);
-    }
-    .input-group-lg .input-group-text,
-    .input-group-lg .form-control,
-    .input-group-lg .btn{
-      background: rgba(255,255,255,.92);
-    }
-
-    /* Filtres (à gauche) */
-    .filter-card{
-      border: 1px solid var(--card-border);
-      border-radius: 18px;
-      box-shadow: var(--shadow-soft);
-      background: rgba(255,255,255,.82);
-      backdrop-filter: blur(12px);
-    }
-    /* Sticky seulement sur desktop */
-@media (min-width: 992px){
-  .sticky-filters{
-    position: -webkit-sticky; /* Safari */
-    position: sticky;
-    top: 92px;               /* ajuste selon ta navbar */
-    align-self: flex-start;  /* évite certains bugs */
-  }
-}
-
-
-    /* Labels plus clean */
-    .filter-card .form-label{
-      color: rgba(15,23,42,.78);
-      font-weight: 700;
-      font-size: .85rem;
-      margin-bottom: .35rem;
-    }
-
-    .filter-card .form-control,
-    .filter-card .form-select{
-      border-radius: 14px;
-      border-color: rgba(15,23,42,.10);
-      background: rgba(248,250,252,.75);
-    }
-    .filter-card .form-control:focus,
-    .filter-card .form-select:focus{
-      border-color: rgba(13,110,253,.40);
-      box-shadow: 0 0 0 .25rem rgba(13,110,253,.12);
-      background: rgba(255,255,255,.92);
-    }
-
-    /* Radios un peu plus premium */
-    .filter-card .form-check-input{
-      cursor: pointer;
-    }
-    .filter-card .form-check-label{
-      cursor: pointer;
-      color: rgba(15,23,42,.75);
-      font-weight: 600;
-      font-size: .9rem;
-    }
-
-    /* Cartes catalogue */
-    .catalog-card{
-      border: 1px solid var(--card-border);
-      border-radius: 18px;
-      box-shadow: var(--shadow-soft);
-      transition: .15s;
-      overflow: hidden;
-      background:#fff;
-    }
-    .catalog-card:hover{
-      transform: translateY(-2px);
-      box-shadow: var(--shadow-hover);
-    }
-
-    /* Badges */
-    .badge-soft{
-      background: var(--blue-soft);
-      color: var(--blue-ink);
-      border: 1px solid rgba(13,110,253,.18);
-    }
-    .badge-family{
-      background: var(--orange-soft);
-      color: var(--orange-ink);
-      border: 1px solid rgba(253,126,20,.22);
-    }
-
-    /* Chips */
-    .chip{
-      display:inline-flex;
-      align-items:center;
-      gap:.4rem;
-      padding:.35rem .6rem;
-      border-radius:999px;
-      border:1px solid rgba(17,24,39,.12);
-      background:rgba(255,255,255,.75);
-      box-shadow:0 8px 18px rgba(16,24,40,.06);
-      font-size:.875rem;
-      margin:.2rem .2rem 0 0;
-    }
-    .chip button{
-      border:0;
-      background:transparent;
-      line-height:1;
-      padding:0;
-      color:#6b7280;
-    }
-
-    /* Thumbnail */
-    .thumb{
-      border-radius:16px;
-      overflow:hidden;
-      border:1px solid var(--card-border);
-      background: linear-gradient(135deg,var(--blue-soft),rgba(17,24,39,.06));
-    }
-    .thumb img{
-      width:100%;
-      height:100%;
-      object-fit:contain;
-      background:#fff;
-      display:block;
-    }
-
-    .card-title-trunc{
-      display:-webkit-box;
-      -webkit-line-clamp:2;
-      -webkit-box-orient:vertical;
-      overflow:hidden;
-      line-height:1.2;
-    }
-
-    /* Boutons (petit boost visuel) */
-    .btn{
-      border-radius: 14px;
-    }
-    .btn-sm{
-      border-radius: 12px;
-    }
-
-    /* Offcanvas */
-    .offcanvas{
-      --bs-offcanvas-width: 420px;
-    }
-
-    /* Panier */
-    .cart-line{
-      display:flex;
-      gap:.75rem;
-      align-items:center;
-      padding:.6rem;
-      border:1px solid rgba(0,0,0,.07);
-      border-radius:14px;
-      background:#fff;
-      box-shadow: 0 10px 22px rgba(2,6,23,.06);
-    }
-    .cart-thumb{
-      width:54px;
-      height:54px;
-      border-radius:12px;
-      overflow:hidden;
-      border:1px solid rgba(0,0,0,.08);
-      background:#f8fafc;
-      flex:0 0 auto;
-    }
-    .cart-thumb img{
-      width:100%;
-      height:100%;
-      object-fit:contain;
-      background:#fff;
-    }
-    .qty-step{
-      width:34px;
-      height:34px;
-      border-radius:10px;
-    }
-
-    /* Petites améliorations responsive */
-    @media (max-width: 576px){
-      .sticky-filters{ top: 74px; }
-    }
-  </style>
 {% endblock %}
-
 
 {% block javascripts %}
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
@@ -346,25 +139,34 @@
   let cartState = {{ (_cart ?? {})|json_encode|raw }};
 
   const el=(id)=>document.getElementById(id);
+
   function toNumber(v){
     if(v===null||v===undefined) return NaN;
     let s=String(v).trim(); if(!s) return NaN;
     s=s.replace(/\s/g,"").replace(",",".").replace(/[^0-9.\-]/g,"");
-    const n=Number(s); return Number.isFinite(n)?n:NaN;
+    const n=Number(s);
+    return Number.isFinite(n)?n:NaN;
   }
+
   function escHtml(s){
     return String(s ?? "")
       .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
       .replaceAll('"',"&quot;").replaceAll("'","&#039;");
   }
+
   function fmtMoney(n){
     if(!Number.isFinite(n)) return "—";
-    try{ return new Intl.NumberFormat(LOCALE,{style:"currency",currency:CURRENCY,maximumFractionDigits:2}).format(n); }
-    catch(e){ return n.toFixed(2)+" "+CURRENCY; }
+    try{
+      return new Intl.NumberFormat(LOCALE,{style:"currency",currency:CURRENCY,maximumFractionDigits:2}).format(n);
+    }catch(e){
+      return n.toFixed(2)+" "+CURRENCY;
+    }
   }
+
   function debounce(fn, ms=250){
     let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), ms); };
   }
+
   function stripQuotes(s){
     if(s===null||s===undefined) return "";
     s=String(s).trim();
@@ -397,13 +199,12 @@
     return "";
   }
 
-  // ✅ PARSE DATE ROBUSTE (ne casse plus "Mon Oct ...")
+  // ✅ PARSE DATE ROBUSTE
   function parseDateAny(s){
     if(!s) return null;
     let raw = stripQuotes(String(s).trim());
     if(!raw) return null;
 
-    // 1) FR: DD/MM/YYYY ou DD-MM-YYYY (+ heure)
     let m = raw.match(/^(\d{2})[\/\-](\d{2})[\/\-](\d{4})(?:\s+(\d{2}):(\d{2})(?::(\d{2}))?)?$/);
     if(m){
       const dd=+m[1], mm=+m[2], yyyy=+m[3];
@@ -412,20 +213,15 @@
       return isNaN(d.getTime()) ? null : d;
     }
 
-    // 2) Formats type "Thu Jan 22 2026 13:01:28 GMT+0100 (UTC+01:00)"
-    // => on tente direct AVANT de modifier raw
     let d0 = new Date(raw);
     if(!isNaN(d0.getTime())) return d0;
 
-    // 3) ISO-like "YYYY-MM-DD HH:mm:ss" -> "YYYY-MM-DDTHH:mm:ss" (uniquement si ça commence par YYYY-MM-DD)
     if(/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}/.test(raw)){
       raw = raw.replace(" ", "T");
     }
 
-    // 4) coupe microsecondes
     raw = raw.replace(/(\.\d{3})\d+/, "$1");
 
-    // 5) Parse manuel ISO sans timezone
     m = raw.match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2})(?::(\d{2}))?)?$/);
     if(m){
       const yyyy=+m[1], mm=+m[2], dd=+m[3];
@@ -438,12 +234,9 @@
     return isNaN(d.getTime()) ? null : d;
   }
 
-  // ✅ Ici tu choisis la colonne "nouveautés"
   function rowNewnessDate(r){
-    // CAS A (comme tu demandes): nouveautés = sysCreatedDate
     return parseDateAny(field(r, "sysCreatedDate"));
-
-    // CAS B (si tu veux "dernières mises à jour"): décommente et commente la ligne au-dessus
+    // ou sysModifiedDate si tu veux
     // return parseDateAny(field(r, "sysModifiedDate"));
   }
 
@@ -468,6 +261,7 @@
     }
     return n;
   }
+
   function updateMenuBadges(){
     const n=cartTotalCount();
     const b=el("cartBadge");
@@ -478,6 +272,22 @@
     }
   }
 
+  // ✅ met à jour les badges quantité sur les cards (sans re-render complet)
+  function updateCardCartBadges(){
+    document.querySelectorAll("[data-card-badge]").forEach(b=>{
+      const uid = b.getAttribute("data-card-badge");
+      const q = Math.floor(toNumber(cartState?.[uid]) || 0);
+
+      if(q > 0){
+        b.classList.remove("d-none");
+        b.innerHTML = `<i class="bi bi-cart-check"></i><span>${q}</span>`;
+      }else{
+        b.classList.add("d-none");
+        b.innerHTML = "";
+      }
+    });
+  }
+
   async function cartFetchState(){
     const res = await fetch(CFG.cart.state, { credentials:"same-origin" });
     const data = await res.json().catch(()=>null);
@@ -485,8 +295,10 @@
     cartState = data.cart || {};
     updateMenuBadges();
     renderCartSummary();
+    updateCardCartBadges();
     return data;
   }
+
   async function cartAdd(uid, qty){
     const res = await fetch(CFG.cart.add, {
       method:"POST",
@@ -499,8 +311,10 @@
     cartState = data.cart || {};
     updateMenuBadges();
     renderCartSummary();
+    updateCardCartBadges();
     return data;
   }
+
   async function cartSet(uid, qty){
     const res = await fetch(CFG.cart.set, {
       method:"POST",
@@ -513,8 +327,10 @@
     cartState = data.cart || {};
     updateMenuBadges();
     renderCartSummary();
+    updateCardCartBadges();
     return data;
   }
+
   async function cartRemove(uid){
     const res = await fetch(CFG.cart.remove, {
       method:"POST",
@@ -527,6 +343,7 @@
     cartState = data.cart || {};
     updateMenuBadges();
     renderCartSummary();
+    updateCardCartBadges();
     return data;
   }
 
@@ -549,6 +366,7 @@
   let page=1;
 
   function getUid(r){ return field(r,"UniqueId") || field(r,"Id","ID","id"); }
+  function getRef(r){ return field(r,"Id","ID","id") || getUid(r); } // ✅ affichage “Référence”
   function getPrice(r, pm){
     const key = (pm==="inc") ? "SalePriceVatIncluded" : "SalePriceVatExcluded";
     return toNumber(field(r,key));
@@ -564,7 +382,7 @@
       </div>
 
       <div class="mb-3">
-        <label class="form-label fw-semibold">Affichage prix</label>
+        <label class="form-label">Affichage prix</label>
         <div class="d-flex gap-2 align-items-center flex-wrap">
           <div class="form-check">
             <input class="form-check-input" type="radio" name="priceMode" id="pmInc" value="inc" checked>
@@ -578,7 +396,7 @@
       </div>
 
       <div class="mb-3">
-        <label class="form-label fw-semibold">Affichage stock</label>
+        <label class="form-label">Affichage stock</label>
         <div class="d-flex gap-2 flex-wrap">
           <div class="form-check">
             <input class="form-check-input" type="radio" name="stockMode" id="smAll" value="all" checked>
@@ -596,22 +414,22 @@
       </div>
 
       <div class="mb-3">
-        <label class="form-label fw-semibold">Marque</label>
+        <label class="form-label">Marque</label>
         <select id="fBrand" class="form-select"><option value="">Toutes</option></select>
       </div>
 
       <div class="mb-3">
-        <label class="form-label fw-semibold">Famille</label>
+        <label class="form-label">Famille</label>
         <select id="fFamily" class="form-select"><option value="">Toutes</option></select>
       </div>
 
       <div class="mb-3">
-        <label class="form-label fw-semibold">Véhicule</label>
+        <label class="form-label">Véhicule</label>
         <select id="fVehicle" class="form-select"><option value="">Tous</option></select>
       </div>
 
       <div class="mb-3">
-        <label class="form-label fw-semibold">Année</label>
+        <label class="form-label">Année</label>
         <div class="row g-2">
           <div class="col-6"><input id="fYearMin" class="form-control" type="number" placeholder="Min" /></div>
           <div class="col-6"><input id="fYearMax" class="form-control" type="number" placeholder="Max" /></div>
@@ -619,7 +437,7 @@
       </div>
 
       <div class="mb-3">
-        <label class="form-label fw-semibold">Prix</label>
+        <label class="form-label">Prix</label>
         <div class="row g-2">
           <div class="col-6"><input id="fPriceMin" class="form-control" type="number" placeholder="Min" /></div>
           <div class="col-6"><input id="fPriceMax" class="form-control" type="number" placeholder="Max" /></div>
@@ -627,7 +445,7 @@
       </div>
 
       <div class="mb-1">
-        <label class="form-label fw-semibold">Tri</label>
+        <label class="form-label">Tri</label>
         <select id="fSort" class="form-select">
           <option value="relevance">Pertinence</option>
           <option value="priceAsc">Prix (croissant)</option>
@@ -638,7 +456,9 @@
         </select>
       </div>
 
-      <div class="small text-muted mt-2">Astuce : recherche marque, véhicule, famille, UID…</div>
+      <div class="small text-muted mt-2">
+        Astuce : recherche par marque, véhicule, famille, référence…
+      </div>
     </div>`;
   }
 
@@ -655,6 +475,7 @@
   function uniqueSorted(arr){
     return Array.from(new Set(arr.filter(Boolean))).sort((a,b)=> String(a).localeCompare(String(b),"fr"));
   }
+
   function fillSelect(select, values, allLabel){
     const prev=select.value;
     select.innerHTML="";
@@ -668,6 +489,7 @@
     }
     if(prev && values.includes(prev)) select.value=prev;
   }
+
   function buildFacets(){
     const brands=[], families=[], vehicles=[];
     for(const r of allRows){
@@ -825,7 +647,8 @@
   const cardQtyDraft=new Map();
 
   function buildCard(r){
-    const uid=getUid(r);
+    const uid=getUid(r);                 // identifiant interne (panier + images)
+    const ref=getRef(r);                 // ✅ affichage “Référence”
     const cap=field(r,"DesComClear") || "Produit";
     const brand=field(r,"xx_Marque");
     const family=field(r,"FamilyName");
@@ -837,8 +660,11 @@
     const price=getPrice(r, priceMode);
 
     const isNew = isNewRow(r);
+
     const draft=Math.max(1, Math.floor(toNumber(cardQtyDraft.get(uid))||1));
     if(uid) cardQtyDraft.set(uid,draft);
+
+    const inCartQty = uid ? Math.floor(toNumber(cartState?.[uid]) || 0) : 0;
 
     const imgUrl=getImageUrlByUid(uid);
     const col=document.createElement("div");
@@ -847,6 +673,11 @@
 
     col.innerHTML = `
       <div class="catalog-card h-100 p-3">
+
+        <span class="card-cart-pill ${inCartQty>0 ? "" : "d-none"}" data-card-badge="${escHtml(uid)}">
+          <i class="bi bi-cart-check"></i><span>${inCartQty}</span>
+        </span>
+
         <div class="thumb ratio ratio-4x3 mb-3">
           ${imgUrl
             ? `<img src="${escHtml(imgUrl)}" alt="${escHtml(cap)}" loading="lazy"
@@ -873,7 +704,7 @@
         </div>
 
         <div class="mt-3 small text-muted">
-          ${uid ? `UID : <span class="fw-semibold">${escHtml(uid)}</span>` : `<span class="text-danger">UID manquant</span>`}
+          ${ref ? `Référence : <span class="fw-semibold">${escHtml(ref)}</span>` : `<span class="text-danger">Référence manquante</span>`}
         </div>
 
         <div class="mt-3">
@@ -891,7 +722,7 @@
               </button>
             </div>
 
-            <button class="btn btn-primary btn-sm flex-fill" type="submit" ${disabled}>
+            <button class="btn btn-primary btn-sm flex-fill" type="submit" ${disabled} title="Ajouter au panier">
               <i class="bi bi-cart-plus"></i>
             </button>
           </form>
@@ -905,6 +736,7 @@
     grid.innerHTML="";
     empty.classList.toggle("d-none", rows.length!==0);
     for(const r of rows) grid.appendChild(buildCard(r));
+    updateCardCartBadges(); // ✅ au cas où
   }
 
   grid.addEventListener("click",(e)=>{
@@ -943,7 +775,7 @@
 
     try{
       await cartAdd(uid, qty);
-      showToast(`Ajouté au panier : ${uid} (x${qty})`, "success");
+      showToast(`Ajouté au panier (x${qty})`, "success");
     }catch(err){
       console.error(err);
       showToast("Erreur lors de l'ajout au panier.", "danger");
@@ -966,6 +798,8 @@
       const r=allRowsByUid.get(uid);
       const cap=r ? (field(r,"DesComClear")||uid) : uid;
       const brand=r ? field(r,"xx_Marque") : "";
+      const ref = r ? getRef(r) : uid;
+
       const price=r ? getPrice(r, priceMode) : NaN;
       if(Number.isFinite(price)) totalVal += price*qty;
 
@@ -979,7 +813,7 @@
         </div>
         <div style="min-width:0; flex:1;">
           <div class="fw-semibold text-truncate">${escHtml(cap)}</div>
-          <div class="small text-muted">${brand ? escHtml(brand)+" • " : ""}UID: ${escHtml(uid)}</div>
+          <div class="small text-muted">${brand ? escHtml(brand)+" • " : ""}Réf: ${escHtml(ref)}</div>
           ${Number.isFinite(price) ? `<div class="small text-muted mt-1">PU: <span class="fw-semibold">${escHtml(fmtMoney(price))}</span></div>` : ``}
         </div>
         <div class="d-flex flex-column align-items-end gap-2">
@@ -1133,8 +967,8 @@
 
     updateMenuBadges();
     renderCartSummary();
+    updateCardCartBadges();
 
-    // ✅ petit debug utile
     if(CFG.pageMode==="new"){
       const nbNew = allRows.filter(isNewRow).length;
       console.log("[NOUVEAUTES] newDays=", CFG.newDays, "items=", nbNew, "sur", allRows.length);
@@ -1150,7 +984,7 @@
     btnMore.addEventListener("click", ()=>{ page++; renderVisible(); });
 
     wireMenuCartButton();
-    cartFetchState().catch(()=>{ updateMenuBadges(); renderCartSummary(); });
+    cartFetchState().catch(()=>{ updateMenuBadges(); renderCartSummary(); updateCardCartBadges(); });
 
     loadCsv().catch(err=>{
       console.error(err);
