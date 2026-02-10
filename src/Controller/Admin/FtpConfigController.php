@@ -13,6 +13,9 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use App\Service\FtpFileChecker;
+use App\Service\LocalFileChecker;
+use App\Service\FtpCsvPreviewer;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[IsGranted('ROLE_ADMIN')]
@@ -123,5 +126,69 @@ final class FtpConfigController extends AbstractController
 		}
 
 		return $this->json($result);
+	}
+
+
+
+	#[Route('/admin/integrations/ftp/check-file', name: 'admin_ftp_check_file', methods: ['GET'])]
+	public function checkFile(
+		EntityManagerInterface $em,
+		Encryptor $encryptor,
+		FtpFileChecker $ftpChecker,
+		LocalFileChecker $localChecker,
+	): JsonResponse {
+		$cfg = $em->getRepository(FtpConnection::class)->findOneBy([]);
+		if (!$cfg) {
+			return $this->json(['ok' => false, 'message' => 'Config FTP introuvable'], 404);
+		}
+
+		$password = $cfg->getPasswordEnc() ? $encryptor->decrypt($cfg->getPasswordEnc()) : '';
+
+		// ✅ Chemin local (adapte selon ton projet)
+		// Exemple si tu exportes dans ./exports
+		$localDir = $this->getParameter('kernel.project_dir') . '/exports';
+
+		$local = $localChecker->exists($localDir, $cfg->getCsvName());
+
+		$remote = $ftpChecker->existsRemote(
+			[
+				'host' => $cfg->getHost(),
+				'port' => $cfg->getPort(),
+				'username' => $cfg->getUsername(),
+				'password' => $password,
+				'secure' => $cfg->isSecure(),
+				'timeoutMs' => $cfg->getTimeoutMs(),
+			],
+			$cfg->getRemoteDir(),
+			$cfg->getCsvName()
+		);
+
+		return $this->json([
+			'ok' => true,
+			'local' => $local,
+			'remote' => $remote,
+		]);
+	}
+
+
+
+
+	#[Route('/admin/integrations/ftp/csv/preview', name: 'admin_ftp_csv_preview', methods: ['GET'])]
+	public function csvPreview(
+		EntityManagerInterface $em,
+		FtpCsvPreviewer $previewer
+	): JsonResponse {
+		$cfg = $em->getRepository(FtpConnection::class)->findOneBy([]);
+		if (!$cfg) {
+			return $this->json(['ok' => false, 'message' => 'Config FTP introuvable.'], 404);
+		}
+
+		// pour l’instant delimiter fixe ; (tu pourras le mettre en DB plus tard)
+		$result = $previewer->preview($cfg, 5, ';');
+
+		// Optionnel: on sauvegarde le message du dernier preview si tu veux, sinon laisse.
+		// $cfg->setLastTestMessage($result['message']); $em->flush();
+
+		return $this->json($result, $result['ok'] ? 200 : 422);
 	}
 }

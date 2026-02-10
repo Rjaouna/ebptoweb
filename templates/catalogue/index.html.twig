@@ -1,0 +1,13 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Catalogue{% endblock %}
+
+{% block body %}
+  {% include 'catalogue/_catalogue.html.twig' with {
+    pageMode: 'all',
+    pageTitle: 'Catalogue',
+    newDays: 5,
+    _cart: _cart ?? {},
+    _cartCount: _cartCount ?? 0
+  } %}
+{% endblock %}

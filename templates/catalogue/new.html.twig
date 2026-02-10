@@ -1,0 +1,13 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Nouveautés{% endblock %}
+
+{% block body %}
+  {% include 'catalogue/_catalogue.html.twig' with {
+    pageMode: 'new',
+    pageTitle: 'Nouveautés',
+    newDays: newDays|default(5),
+    _cart: _cart ?? {},
+    _cartCount: _cartCount ?? 0
+  } %}
+{% endblock %}

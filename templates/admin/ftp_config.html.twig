@@ -123,6 +123,17 @@
 							<button type="button" class="btn btn-outline-secondary" id="btn-test-ftp" data-test-url="{{ path('admin_ftp_test') }}">
 								Tester la connexion
 							</button>
+<button type="button" class="btn btn-outline-info" id="btn-check-file" data-url="{{ path('admin_ftp_check_file') }}">
+	Vérifier le fichier
+</button>
+<button type="button" class="btn btn-outline-info" id="btn-preview-csv" data-preview-url="{{ path('admin_ftp_csv_preview') }}">
+	Afficher les colonnes
+</button>
+
+
+
+
+
 
 							<span class="ms-auto small text-muted d-flex align-items-center">
 								<span id="test-spinner" class="spinner-border spinner-border-sm me-2 d-none" role="status"></span>
@@ -188,7 +199,11 @@
 				</div>
 			</div>
 		</div>
+<div class="mt-3" id="file-check-result"></div>
+<div class="mt-4" id="csv-preview-zone"></div>
+
 	</div>
+
 
 	 <script>
 	(function () {
@@ -265,5 +280,119 @@
 	  });
 	})();
 	</script>
+ <script>
+(function(){
+  const btn = document.getElementById('btn-check-file');
+  const out = document.getElementById('file-check-result');
+  if(!btn) return;
+
+  btn.addEventListener('click', async () => {
+    out.innerHTML = 'Vérification en cours...';
+
+    const res = await fetch(btn.dataset.url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }});
+    const data = await res.json().catch(()=>null);
+
+    if(!res.ok || !data){
+      out.innerHTML = '<div class="alert alert-danger">Erreur check fichier</div>';
+      return;
+    }
+
+    const remote = data.remote;
+
+    out.innerHTML = `
+ 
+     
+         
+          <div><strong>FTP:</strong> ${(remote.ok && remote.exists) ? '✅ trouvé' : '❌ absent/KO'}</div>
+
+    `;
+  });
+})();
+</script>
+ <script>
+(function () {
+  const btn = document.getElementById('btn-preview-csv');
+  const zone = document.getElementById('csv-preview-zone');
+  if (!btn || !zone) return;
+
+  btn.addEventListener('click', async () => {
+    zone.innerHTML = '<div class="text-muted">Chargement preview CSV...</div>';
+    btn.disabled = true;
+
+    try {
+      const res = await fetch(btn.dataset.previewUrl, {
+        method: 'GET',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok || !data) {
+        zone.innerHTML = '<div class="alert alert-danger">Erreur preview CSV.</div>';
+        return;
+      }
+
+      if (!data.ok) {
+        zone.innerHTML = `<div class="alert alert-danger">${data.message || 'Preview KO'}</div>`;
+        return;
+      }
+
+      const headers = data.headers || [];
+      const rows = data.rows || [];
+
+      // Liste colonnes
+      const colsHtml = headers.length
+        ? `<div class="d-flex flex-wrap gap-2">${headers.map(h => `<span class="badge text-bg-primary">${escapeHtml(h)}</span>`).join('')}</div>`
+        : '<div class="text-muted">Aucune colonne détectée.</div>';
+
+      // Table preview
+      let tableHtml = '';
+      if (rows.length) {
+        tableHtml += `<div class="table-responsive mt-3"><table class="table table-sm table-bordered align-middle">`;
+        tableHtml += `<thead><tr>${headers.map(h => `<th>${escapeHtml(h)}</th>`).join('')}</tr></thead>`;
+        tableHtml += `<tbody>`;
+        for (const r of rows) {
+          tableHtml += `<tr>${headers.map(h => `<td>${escapeHtml(r[h] ?? '')}</td>`).join('')}</tr>`;
+        }
+        tableHtml += `</tbody></table></div>`;
+      } else {
+        tableHtml = '<div class="text-muted mt-2">Aucune ligne à afficher.</div>';
+      }
+
+      zone.innerHTML = `
+        <div class="card shadow-sm">
+          <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <div class="fw-semibold">Colonnes trouvées + 5 premières lignes</div>
+            <div class="text-muted small">
+              ${escapeHtml(data.remotePath || '')}
+              ${data.size ? ` • ${data.size} bytes` : ''}
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="mb-2">${colsHtml}</div>
+            ${tableHtml}
+          </div>
+        </div>
+      `;
+    } catch (e) {
+      zone.innerHTML = `<div class="alert alert-danger">Erreur: ${escapeHtml(e?.message || e)}</div>`;
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  function escapeHtml(s) {
+    return String(s ?? '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;');
+  }
+})();
+</script>
+
+
+
 {% endblock %}
 
