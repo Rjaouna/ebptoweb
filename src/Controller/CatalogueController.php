@@ -11,6 +11,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 
+
 class CatalogueController extends AbstractController
 {
     #[Route('/catalogue', name: 'catalogue_index', methods: ['GET'])]
@@ -48,35 +49,51 @@ class CatalogueController extends AbstractController
         ]);
     }
 
-    #[Route('/catalogue/csv', name: 'catalogue_csv', methods: ['GET'])]
-    public function csv(FtpConnectionRepository $repo, Encryptor $encryptor): Response
-    {
-        /** @var FtpConnection|null $cfg */
-        $cfg = $repo->findOneBy([], ['id' => 'DESC']);
-        if (!$cfg) {
-            return new Response("Aucune configuration FTP trouvée en base.", 404);
-        }
 
-        $host = trim($cfg->getHost());
-        $user = trim($cfg->getUsername());
-        $port = (int) $cfg->getPort();
-        $remoteDir = trim($cfg->getRemoteDir()) ?: '/';
-        $csvName = trim($cfg->getCsvName()) ?: 'items.csv';
-        $timeoutSec = max(3, (int) ceil(((int)$cfg->getTimeoutMs()) / 1000));
-        $secure = (bool) $cfg->isSecure();
+#[Route('/catalogue/csv', name: 'catalogue_csv', methods: ['GET'])]
+public function csv(FtpConnectionRepository $repo, Encryptor $encryptor): Response
+{
+    $cfg = $repo->findOneBy([], ['id' => 'DESC']);
+    if (!$cfg) return new Response("Aucune configuration FTP trouvée en base.", 404);
 
-        if ($host === '' || $user === '') {
-            return new Response("Configuration FTP invalide (host/username vides).", 400);
-        }
+    $host = trim($cfg->getHost());
+    $user = trim($cfg->getUsername());
+    $port = (int) $cfg->getPort();
+    $remoteDir = trim($cfg->getRemoteDir()) ?: '/';
+    $csvName = trim($cfg->getCsvName()) ?: 'items.csv';
+    $timeoutSec = max(3, (int) ceil(((int)$cfg->getTimeoutMs()) / 1000));
+    $secure = (bool) $cfg->isSecure();
 
-        $passEnc = $cfg->getPasswordEnc() ?? '';
-        $pass = $passEnc !== '' ? $encryptor->decrypt($passEnc) : '';
+    if ($host === '' || $user === '') {
+        return new Response("Configuration FTP invalide (host/username vides).", 400);
+    }
 
-        $response = new StreamedResponse(function () use (
-            $secure, $host, $port, $timeoutSec, $user, $pass, $remoteDir, $csvName
-        ) {
+    $passEnc = $cfg->getPasswordEnc() ?? '';
+    $pass = $passEnc !== '' ? $encryptor->decrypt($passEnc) : '';
+
+    // ✅ cache local
+    $cacheDir = dirname(__DIR__, 2) . '/var/catalogue_cache';
+    if (!is_dir($cacheDir)) @mkdir($cacheDir, 0775, true);
+
+    $localFile = $cacheDir . '/items_cache.csv';
+    $ttlSeconds = 300; // 5 minutes
+    $isFresh = file_exists($localFile) && (time() - filemtime($localFile) < $ttlSeconds);
+
+    // ✅ évite que 10 utilisateurs déclenchent 10 downloads en même temps
+    $lockFile = $cacheDir . '/items_cache.lock';
+    $lockFp = fopen($lockFile, 'c+');
+    if ($lockFp) {
+        // lock exclusif (attend un peu)
+        @flock($lockFp, LOCK_EX);
+    }
+
+    try {
+        // recheck après lock
+        $isFresh = file_exists($localFile) && (time() - filemtime($localFile) < $ttlSeconds);
+
+        if (!$isFresh) {
             $conn = $secure ? @ftp_ssl_connect($host, $port, $timeoutSec) : @ftp_connect($host, $port, $timeoutSec);
-            if (!$conn) { throw new \RuntimeException("Impossible de se connecter au serveur FTP/FTPS."); }
+            if (!$conn) throw new \RuntimeException("Impossible de se connecter au serveur FTP/FTPS.");
 
             try {
                 @ftp_set_option($conn, FTP_TIMEOUT_SEC, $timeoutSec);
@@ -94,33 +111,40 @@ class CatalogueController extends AbstractController
                 }
 
                 $tmp = tempnam(sys_get_temp_dir(), 'csv_');
-                if ($tmp === false) {
-                    throw new \RuntimeException("Impossible de créer un fichier temporaire.");
-                }
+                if ($tmp === false) throw new \RuntimeException("Impossible de créer un fichier temporaire.");
 
                 if (!@ftp_get($conn, $tmp, $csvName, FTP_BINARY)) {
                     @unlink($tmp);
                     throw new \RuntimeException("CSV introuvable ou téléchargement impossible: " . $csvName);
                 }
 
-                $fh = fopen($tmp, 'rb');
-                if (!$fh) {
-                    @unlink($tmp);
-                    throw new \RuntimeException("Impossible de lire le CSV téléchargé.");
-                }
-
-                while (!feof($fh)) { echo fread($fh, 8192); }
-
-                fclose($fh);
-                @unlink($tmp);
+                // ✅ écriture atomique vers le cache local
+                @rename($tmp, $localFile);
             } finally {
                 @ftp_close($conn);
             }
-        });
-
-        $response->headers->set('Content-Type', 'text/csv; charset=UTF-8');
-        $response->headers->set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
-
-        return $response;
+        }
+    } finally {
+        if ($lockFp) { @flock($lockFp, LOCK_UN); @fclose($lockFp); }
     }
+
+    // ✅ maintenant on sert le fichier local (ultra rapide)
+    if (!file_exists($localFile)) {
+        return new Response("CSV indisponible (cache non créé).", 500);
+    }
+
+    $response = new StreamedResponse(function () use ($localFile) {
+        $fh = fopen($localFile, 'rb');
+        if (!$fh) return;
+        while (!feof($fh)) echo fread($fh, 8192);
+        fclose($fh);
+    });
+
+    $response->headers->set('Content-Type', 'text/csv; charset=UTF-8');
+    // ✅ tu peux autoriser un mini-cache navigateur aussi (30s) :
+    $response->headers->set('Cache-Control', 'public, max-age=30');
+
+    return $response;
+}
+
 }
