@@ -1,198 +1,73 @@
 {# templates/partials/_menu.html.twig #}
 {% set route = app.request.attributes.get('_route') %}
-{% set userLabel = app.user ? (app.user.email|default('User')) : 'Guest' %}
-{% set userInitials = userLabel|slice(0,1)|upper %}
+{% set userEmail = app.user ? (app.user.email|default('Compte')) : '' %}
+{% set userInitial = userEmail ? userEmail|slice(0,1)|upper : 'U' %}
 
-<style>
-  .app-topbar{
-    position: sticky; top:0; z-index:1030;
-    background: rgba(255,255,255,.82);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(0,0,0,.06);
-  }
-  .app-topbar .brand-mark{
-    width:38px; height:38px; border-radius:12px;
-    display:grid; place-items:center;
-    background:#111; color:#fff;
-    box-shadow:0 10px 22px rgba(0,0,0,.10);
-  }
-  .app-topbar .nav-pill{
-    border-radius:999px;
-    padding:.55rem .95rem;
-    font-weight:700;
-    color:#1b1f24;
-    transition: all .18s ease;
-    text-decoration:none;
-  }
-  .app-topbar .nav-pill:hover{ background:rgba(0,0,0,.05); }
-  .app-topbar .nav-pill.active{
-    background: rgba(13,110,253,.12);
-    color:#0d6efd;
-  }
-
-  .app-topbar .icon-btn{
-    border-radius:999px;
-    padding:.55rem .85rem;
-    border:1px solid rgba(0,0,0,.10);
-    background:#fff;
-    transition: all .18s ease;
-    text-decoration:none;
-    color:#1b1f24;
-  }
-  .app-topbar .icon-btn:hover{
-    transform: translateY(-1px);
-    box-shadow:0 10px 18px rgba(0,0,0,.08);
-  }
-
-  .app-topbar .cart-badge{
-    font-size:.72rem;
-    border-radius:999px;
-    padding:.18rem .45rem;
-    border: 2px solid rgba(255,255,255,.95);
-  }
-
-  .app-topbar .avatar{
-    width:38px; height:38px; border-radius:999px;
-    display:grid; place-items:center;
-    font-weight:800;
-    letter-spacing:.02em;
-    background: linear-gradient(135deg, rgba(13,110,253,.18), rgba(111,66,193,.18));
-    border:1px solid rgba(0,0,0,.08);
-    color:#1b1f24;
-    user-select:none;
-  }
-
-  .app-topbar .dropdown-menu{
-    border-radius:14px;
-    border:1px solid rgba(0,0,0,.06);
-    box-shadow:0 18px 40px rgba(0,0,0,.12);
-    padding:.5rem;
-  }
-  .app-topbar .dropdown-item{ border-radius:12px; padding:.6rem .75rem; }
-  .app-topbar .dropdown-item i{ width:20px; display:inline-block; }
-
-  /* Offcanvas Panier */
-  .cart-item{
-    display:flex; gap:.75rem; align-items:center;
-    border:1px solid rgba(0,0,0,.08);
-    border-radius:16px;
-    padding:.65rem .7rem;
-    background:#fff;
-    box-shadow: 0 10px 22px rgba(2,6,23,.06);
-  }
-  .cart-thumb{
-    width:56px; height:56px; border-radius:14px;
-    border:1px solid rgba(0,0,0,.08);
-    overflow:hidden;
-    background:#f8f9fa;
-    display:grid; place-items:center;
-    flex:0 0 auto;
-  }
-  .cart-thumb img{
-    width:100%; height:100%;
-    object-fit:contain;
-    background:#fff;
-    display:block;
-  }
-  .cart-meta{ min-width:0; flex:1; }
-  .cart-title{
-    font-weight:800;
-    font-size:.95rem;
-    line-height:1.15;
-  }
-  .cart-sub{
-    font-size:.78rem;
-    color:#6c757d;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-  }
-  .qty-ctrl{
-    display:flex;
-    align-items:center;
-    gap:.35rem;
-  }
-  .qty-ctrl .btn{ border-radius:10px; }
-  .qty-ctrl input{
-    width:58px;
-    text-align:center;
-    border-radius:12px;
-  }
-</style>
-
-<header class="app-topbar">
-  <div class="container-fluid px-3 px-lg-4">
-    <div class="d-flex align-items-center justify-content-between py-2">
+<header class="sticky-top">
+  <nav class="navbar navbar-expand-lg bg-body app-navbar border-bottom">
+    <div class="container-fluid px-3 px-lg-4">
 
       {# Brand #}
-      <a href="/" class="text-decoration-none d-flex align-items-center gap-2">
-        <span class="brand-mark"><i class="bi bi-box-seam"></i></span>
-        <div class="d-flex flex-column lh-sm">
-          <span class="fw-bold" style="font-size:1.02rem;color:#111;">EBPToWeb</span>
-          <span class="text-muted" style="font-size:.78rem;">Catalogue & export</span>
-        </div>
-      </a>
+  <a class="navbar-brand d-flex align-items-center gap-2" href="/">
+  <span class="brand-logo">
+    <img src="{{ asset('img/logo.png') }}" alt="EBPToWeb" loading="lazy">
+  </span>
 
-      {# Center nav (desktop) #}
-      <nav class="d-none d-lg-flex align-items-center gap-1">
-        <a class="nav-pill {% if route starts with 'catalogue' %}active{% endif %}" href="{{ path('catalogue_index') }}">
+</a>
+
+
+      {# Desktop nav #}
+      <div class="d-none d-lg-flex align-items-center gap-2 ms-lg-3">
+        <a class="nav-link app-pill {{ route starts with 'catalogue' ? 'active' : '' }}"
+           href="{{ path('catalogue_index') }}">
           <i class="bi bi-grid-3x3-gap me-2"></i>Catalogue
         </a>
 
-        <a class="nav-pill {% if route == 'admin_ftp_config' %}active{% endif %}" href="/admin/integrations/ftp">
-          <i class="bi bi-cloud-arrow-up me-2"></i>FTP / CSV
-        </a>
-
-        <a class="nav-pill {% if route == 'catalogue_new' %}active{% endif %}" href="{{ path('catalogue_new') }}">
+        <a class="nav-link app-pill {{ route == 'catalogue_new' ? 'active' : '' }}"
+           href="{{ path('catalogue_new') }}">
           <i class="bi bi-stars me-2"></i>Nouveautés
         </a>
-      </nav>
+
+        <a class="nav-link app-pill {{ route == 'admin_ftp_config' ? 'active' : '' }}"
+           href="/admin/integrations/ftp">
+          <i class="bi bi-cloud-arrow-up me-2"></i>FTP / CSV
+        </a>
+      </div>
 
       {# Right actions #}
-      <div class="d-flex align-items-center gap-2">
+      <div class="ms-auto d-flex align-items-center gap-2">
 
         {% if app.user %}
-          {# ✅ Bouton panier -> ouvre offcanvas (reste un lien si JS désactivé) #}
-          <a id="cartBtn" href="{{ path('cart_index') }}" class="icon-btn d-flex align-items-center gap-2">
+          {# Panier : offcanvas sur Catalogue sinon lien normal #}
+          <a id="cartBtn" href="{{ path('cart_index') }}"
+             class="btn btn-outline-secondary rounded-pill position-relative px-3 mx-2">
             <i class="bi bi-cart3"></i>
-            <span class="d-none d-md-inline fw-semibold">Panier</span>
-            <span id="cartBadge" class="badge bg-secondary cart-badge">0</span>
+            <span class="d-none d-md-inline ms-2 fw-semibold">Panier</span>
+            <span id="cartBadge"
+                  class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-secondary">
+              0
+            </span>
           </a>
         {% else %}
-          <a href="/login" class="icon-btn d-flex align-items-center gap-2">
+          <a href="/login" class="btn btn-primary rounded-pill px-3">
             <i class="bi bi-box-arrow-in-right"></i>
-            <span class="d-none d-md-inline fw-semibold">Se connecter</span>
+            <span class="d-none d-md-inline ms-2 fw-semibold">Se connecter</span>
           </a>
         {% endif %}
 
-        {# Mobile menu trigger #}
-        <button class="icon-btn d-lg-none" type="button"
-                data-bs-toggle="offcanvas" data-bs-target="#mobileNav" aria-controls="mobileNav">
-          <i class="bi bi-list"></i>
-        </button>
-
-        {# User dropdown #}
+        {# Compte dropdown (desktop + mobile) #}
         <div class="dropdown">
-          <button class="btn p-0 border-0 bg-transparent" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-            <div class="d-flex align-items-center gap-2">
-              <div class="avatar">{{ userInitials }}</div>
-              <div class="d-none d-md-flex flex-column align-items-start lh-sm">
-                <span class="fw-semibold" style="font-size:.92rem;">{{ app.user ? 'Compte' : 'Invité' }}</span>
-                <span class="text-muted" style="font-size:.78rem;">
-                  {{ app.user ? (app.user.email|default('')) : 'Se connecter' }}
-                </span>
-              </div>
-              <i class="bi bi-chevron-down text-muted d-none d-md-inline"></i>
-            </div>
+          <button class="btn btn-light"
+                  type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <span class="app-avatar">{{ userInitial }}</span>
+         
           </button>
 
-          <ul class="dropdown-menu dropdown-menu-end">
+          <ul class="dropdown-menu dropdown-menu-end app-dropdown">
             {% if app.user %}
-              <li>
-                <span class="dropdown-item-text text-muted small">
-                  <i class="bi bi-person me-2"></i>{{ app.user.email }}
-                </span>
+              <li class="px-3 py-2">
+                <div class="small text-secondary">Connecté en</div>
+                <div class="fw-semibold text-truncate" style="max-width:260px;">{{ userEmail }}</div>
               </li>
               <li><hr class="dropdown-divider"></li>
 
@@ -203,401 +78,198 @@
                 <li><hr class="dropdown-divider"></li>
               {% endif %}
 
-              <li><a class="dropdown-item text-danger" href="/logout"><i class="bi bi-box-arrow-right me-2"></i>Déconnexion</a></li>
+              <li>
+                <a class="dropdown-item text-danger" href="/logout">
+                  <i class="bi bi-box-arrow-right me-2"></i>Déconnexion
+                </a>
+              </li>
             {% else %}
-              <li><a class="dropdown-item" href="/login"><i class="bi bi-box-arrow-in-right me-2"></i>Se connecter</a></li>
+              <li>
+                <a class="dropdown-item" href="/login">
+                  <i class="bi bi-box-arrow-in-right me-2"></i>Se connecter
+                </a>
+              </li>
             {% endif %}
           </ul>
         </div>
 
+        {# Mobile menu button #}
+        <button class="btn btn-light rounded-pill px-3 d-lg-none"
+                type="button"
+                data-bs-toggle="offcanvas"
+                data-bs-target="#mobileNav"
+                aria-controls="mobileNav"
+                aria-label="Menu">
+          <i class="bi bi-list"></i>
+        </button>
       </div>
-    </div>
-  </div>
 
-  {# Mobile Offcanvas #}
-  <div class="offcanvas offcanvas-end" tabindex="-1" id="mobileNav" aria-labelledby="mobileNavLabel">
-    <div class="offcanvas-header">
-      <h5 class="offcanvas-title" id="mobileNavLabel">Menu</h5>
-      <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
-    <div class="offcanvas-body">
-      <div class="d-grid gap-2">
-        <a class="btn btn-outline-dark text-start" href="{{ path('catalogue_index') }}"><i class="bi bi-grid-3x3-gap me-2"></i>Catalogue</a>
-        <a class="btn btn-outline-dark text-start" href="/admin/integrations/ftp"><i class="bi bi-cloud-arrow-up me-2"></i>FTP / CSV</a>
-        <a class="btn btn-outline-dark text-start" href="{{ path('catalogue_new') }}"><i class="bi bi-stars me-2"></i>Nouveautés</a>
-        <a class="btn btn-outline-dark text-start" href="{{ path('cart_index') }}"><i class="bi bi-receipt-cutoff me-2"></i>Devis</a>
-      </div>
-    </div>
-  </div>
+  </nav>
 </header>
 
-{# ✅ OFFCANVAS PANIER GLOBAL #}
-<div class="offcanvas offcanvas-end" tabindex="-1" id="cartCanvas" aria-labelledby="cartCanvasLabel">
+{# ✅ Mobile Offcanvas Nav #}
+<div class="offcanvas offcanvas-end" tabindex="-1" id="mobileNav" aria-labelledby="mobileNavLabel">
   <div class="offcanvas-header">
-    <h5 class="offcanvas-title" id="cartCanvasLabel"><i class="bi bi-cart3 me-2"></i>Panier</h5>
-    <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    <div class="d-flex align-items-center gap-2">
+      <span class="brand-mark"><i class="bi bi-box-seam"></i></span>
+      <div class="lh-sm">
+        <div class="fw-bold" id="mobileNavLabel">Menu</div>
+        <div class="text-secondary small">Navigation</div>
+      </div>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
   </div>
 
   <div class="offcanvas-body">
-    <div id="cartEmpty" class="text-center text-muted py-4">
-      Votre panier est vide.
-      <div class="small mt-2">Ajoutez des articles depuis le catalogue.</div>
-    </div>
+    <div class="d-grid gap-2">
 
-    <div class="d-grid gap-2" id="cartSummary"></div>
-
-    <div class="d-flex gap-2 mt-3">
-      <button class="btn btn-outline-danger w-100" id="btnCartClear" type="button">
-        <i class="bi bi-trash"></i> Vider
-      </button>
-      <a class="btn btn-primary w-100" href="{{ path('cart_index') }}">
-        <i class="bi bi-bag-check"></i> Commander
+      <a class="btn btn-light text-start app-mobile-link {{ route starts with 'catalogue' ? 'active' : '' }}"
+         href="{{ path('catalogue_index') }}">
+        <i class="bi bi-grid-3x3-gap me-2"></i> Catalogue
       </a>
-    </div>
-  </div>
 
-  <div class="p-3 border-top">
-    <div class="d-flex align-items-center justify-content-between">
-      <div class="fw-semibold">Total estimé</div>
-      <div class="fw-semibold" id="cartTotal">—</div>
+      <a class="btn btn-light text-start app-mobile-link {{ route == 'catalogue_new' ? 'active' : '' }}"
+         href="{{ path('catalogue_new') }}">
+        <i class="bi bi-stars me-2"></i> Nouveautés
+      </a>
+
+      <a class="btn btn-light text-start app-mobile-link {{ route == 'admin_ftp_config' ? 'active' : '' }}"
+         href="/admin/integrations/ftp">
+        <i class="bi bi-cloud-arrow-up me-2"></i> FTP / CSV
+      </a>
+
+      <a class="btn btn-outline-secondary text-start app-mobile-link" href="{{ path('cart_index') }}">
+        <i class="bi bi-receipt-cutoff me-2"></i> Panier / Devis
+      </a>
+
+      <hr class="my-3">
+
+      {% if app.user %}
+        <a class="btn btn-outline-danger text-start app-mobile-link" href="/logout">
+          <i class="bi bi-box-arrow-right me-2"></i> Déconnexion
+        </a>
+      {% else %}
+        <a class="btn btn-primary text-start app-mobile-link" href="/login">
+          <i class="bi bi-box-arrow-in-right me-2"></i> Se connecter
+        </a>
+      {% endif %}
     </div>
-    <div class="small text-muted mt-1">* Affiche nom / marque / famille / véhicule / année / ID / Réf (si dispo)</div>
   </div>
 </div>
+
+<style>
+  /* Menu look modern (sans topbar) */
+  .app-navbar{
+    background: rgba(255,255,255,.86) !important;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+  .brand-mark{
+    width:40px;height:40px;
+    border-radius:14px;
+    display:grid;place-items:center;
+    background: var(--bs-primary);
+    color:#fff;
+    box-shadow: 0 12px 26px rgba(2,6,23,.14);
+  }
+
+  .app-pill{
+    border-radius:999px;
+    padding:.55rem .95rem;
+    font-weight:800;
+    color: var(--bs-secondary);
+    transition: all .18s ease;
+  }
+  .app-pill:hover{
+    background: rgba(17,24,39,.06);
+  }
+  .app-pill.active{
+    background: rgba(var(--bs-primary-rgb), .12);
+    color: var(--bs-primary);
+  }
+
+  /* Avatar button */
+  .app-avatar-btn{
+    border: 1px solid rgba(0,0,0,.08);
+    transition: transform .18s ease, box-shadow .18s ease;
+  }
+  .app-avatar-btn:hover{
+    transform: translateY(-1px);
+    box-shadow: 0 14px 28px rgba(2,6,23,.10);
+  }
+  .app-avatar{
+    width:34px;height:34px;
+    border-radius:999px;
+    display:grid;place-items:center;
+    font-weight:900;
+    background: rgba(var(--bs-primary-rgb), .12);
+    color: var(--bs-primary);
+    border: 1px solid rgba(var(--bs-primary-rgb), .18);
+  }
+
+  .app-dropdown{
+    border-radius: 16px;
+    border: 1px solid rgba(0,0,0,.06);
+    box-shadow: 0 18px 40px rgba(0,0,0,.12);
+    padding: .5rem;
+    min-width: 280px;
+  }
+  .app-dropdown .dropdown-item{
+    border-radius: 12px;
+    padding: .6rem .75rem;
+  }
+  .app-dropdown .dropdown-item i{ width:20px; display:inline-block; }
+
+  /* Mobile links */
+  .app-mobile-link{
+    border-radius: 14px;
+    padding: .75rem .9rem;
+    border: 1px solid rgba(15,23,42,.08);
+    background: rgba(255,255,255,.92);
+  }
+  .app-mobile-link.active{
+    border-color: rgba(var(--bs-primary-rgb), .30);
+    background: rgba(var(--bs-primary-rgb), .10);
+    color: var(--bs-primary);
+    font-weight: 900;
+  }
+
+  /* Badge */
+  #cartBadge{
+    min-width: 22px;
+    height: 22px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    font-size: .75rem;
+    border: 2px solid rgba(255,255,255,.95);
+  }
+</style>
+
+{# ✅ Panier : offcanvas seulement sur Catalogue, sinon redirection vers cart_index #}
 <script>
-(function(){
-  const E = window.CART_ENDPOINTS;
-  const C = window.CATALOG_CONFIG || {};
-  if(!E) return;
+  document.addEventListener("DOMContentLoaded", () => {
+    const btn = document.getElementById("cartBtn");
+    if (!btn) return;
 
-  let cartState = {};
-  let lastSync = 0;
+    btn.addEventListener("click", (e) => {
+      // sur catalogue : ouvrir offcanvas
+      if (window.CATALOG_CONFIG) {
+        const cartCanvas = document.getElementById("cartCanvas");
+        if (!cartCanvas) return; // pas d'offcanvas => laisse le lien
 
-  // cache produits résolus depuis CSV (marche sur Home aussi)
-  const productByUid = new Map();
-  let csvLoadedOnce = false;
+        e.preventDefault();
+        try { window.CartUI?.sync?.(); } catch(_) {}
 
-  const badge = document.getElementById("cartBadge");
-  const emptyEl = document.getElementById("cartEmpty");
-  const listEl  = document.getElementById("cartSummary");
-  const totalEl = document.getElementById("cartTotal");
-  const btnClear = document.getElementById("btnCartClear");
-
-  function escapeHtml(s){
-    return String(s ?? "")
-      .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
-      .replaceAll('"',"&quot;").replaceAll("'","&#039;");
-  }
-
-  function stripQuotes(s){
-    if(s===null||s===undefined) return "";
-    s=String(s).trim();
-    if(s.startsWith('"') && s.endsWith('"')) s=s.slice(1,-1);
-    return s.trim();
-  }
-
-  function toNumber(v){
-    const n = Number(String(v ?? "").replace(/\s/g,"").replace(",", ".").replace(/[^0-9.\-]/g,""));
-    return Number.isFinite(n) ? n : NaN;
-  }
-
-  function fmtMoney(n){
-    try{
-      return new Intl.NumberFormat(C.locale || "fr-FR",{
-        style:"currency",
-        currency: C.currency || "MAD",
-        maximumFractionDigits:2
-      }).format(n);
-    }catch(e){
-      return (Number.isFinite(n)? n.toFixed(2) : "—") + " " + (C.currency || "MAD");
-    }
-  }
-
-  function totalQty(){
-    let n=0;
-    for(const k in cartState){
-      const q = Math.floor(toNumber(cartState[k])||0);
-      if(q>0) n+=q;
-    }
-    return n;
-  }
-
-  function updateBadge(){
-    const n = totalQty();
-    if(badge){
-      badge.textContent = String(n);
-      badge.classList.toggle("bg-danger", n>0);
-      badge.classList.toggle("bg-secondary", n===0);
-    }
-  }
-
-  function imgUrl(uid){
-    const base = C.imagesBase;
-    return base ? (base + "/" + encodeURIComponent(uid) + ".png") : "";
-  }
-
-  function getRowPrice(row){
-    const mode = C.priceMode || "inc";
-    const key = (mode==="inc") ? "SalePriceVatIncluded" : "SalePriceVatExcluded";
-    const n = toNumber(row?.[key]);
-    return Number.isFinite(n) ? n : NaN;
-  }
-
-  // ✅ Charge PapaParse uniquement si besoin (Home)
-  function ensurePapa(){
-    if(window.Papa) return Promise.resolve();
-    return new Promise((resolve, reject)=>{
-      const s = document.createElement("script");
-      s.src = "https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js";
-      s.onload = ()=>resolve();
-      s.onerror = ()=>reject(new Error("PapaParse load failed"));
-      document.head.appendChild(s);
-    });
-  }
-
-  // ✅ Résout les infos produits via CSV pour les UID dans le panier
-  async function ensureProductsForCart(){
-    if(!C.csvUrl) return;
-    const ids = Object.keys(cartState).filter(k => (toNumber(cartState[k])||0) > 0);
-    if(ids.length === 0) return;
-
-    // déjà connu ?
-    const missing = ids.filter(id => !productByUid.has(id));
-    if(missing.length === 0) return;
-
-    // si déjà chargé une fois, on ne refetch pas inutilement
-    // (on peut garder simple : on charge 1 fois et on garde le cache)
-    if(csvLoadedOnce && missing.length === 0) return;
-
-    await ensurePapa();
-
-    let res, text;
-    try{
-      res = await fetch(C.csvUrl, { cache:"no-store", credentials:"same-origin" });
-      text = await res.text();
-    }catch(e){
-      console.warn("CSV fetch failed", e);
-      return;
-    }
-    if(!res.ok) return;
-
-    const wanted = new Set(missing);
-
-    await new Promise((resolve)=>{
-      window.Papa.parse(text, {
-        header: true,
-        delimiter: ";",
-        skipEmptyLines: true,
-        transformHeader: (h)=>stripQuotes(h),
-        transform: (v)=>stripQuotes(v),
-
-        step: (results, parser)=>{
-          const r = results.data || {};
-          const uid = String(r.UniqueId || r.Id || r.ID || r.id || "").trim();
-          if(uid && wanted.has(uid)){
-            productByUid.set(uid, r);
-            wanted.delete(uid);
-            if(wanted.size === 0){
-              parser.abort(); // ✅ stop dès qu’on a tout trouvé
-            }
-          }
-        },
-        complete: ()=> resolve()
-      });
-    });
-
-    csvLoadedOnce = true;
-  }
-
-  async function syncState(force=false){
-    const now = Date.now();
-    if(!force && (now - lastSync) < 800) return;
-    lastSync = now;
-
-    const res = await fetch(E.state, { credentials:"same-origin" });
-    if(!res.ok) return;
-    const data = await res.json().catch(()=>null);
-    if(!data?.ok) return;
-
-    cartState = data.cart || {};
-    updateBadge();
-  }
-
-  async function setQty(uid, qty){
-    const res = await fetch(E.set, {
-      method:"POST",
-      credentials:"same-origin",
-      headers: { "Content-Type":"application/x-www-form-urlencoded; charset=UTF-8", "X-Requested-With":"XMLHttpRequest" },
-      body: new URLSearchParams({ id: uid, qty: String(qty) })
-    });
-    const data = await res.json().catch(()=>null);
-    if(!res.ok || !data?.ok) return false;
-
-    cartState = data.cart || {};
-    updateBadge();
-    await ensureProductsForCart();
-    renderOffcanvas();
-    return true;
-  }
-
-  async function remove(uid){
-    const res = await fetch(E.remove, {
-      method:"POST",
-      credentials:"same-origin",
-      headers: { "Content-Type":"application/x-www-form-urlencoded; charset=UTF-8", "X-Requested-With":"XMLHttpRequest" },
-      body: new URLSearchParams({ id: uid })
-    });
-    const data = await res.json().catch(()=>null);
-    if(!res.ok || !data?.ok) return false;
-
-    cartState = data.cart || {};
-    updateBadge();
-    renderOffcanvas();
-    return true;
-  }
-
-  async function clear(){
-    const res = await fetch(E.clear, {
-      method:"POST",
-      credentials:"same-origin",
-      headers: { "X-Requested-With":"XMLHttpRequest", "Accept":"application/json" }
-    });
-    const data = await res.json().catch(()=>null);
-    if(!res.ok || !data?.ok) return false;
-
-    cartState = {};
-    updateBadge();
-    renderOffcanvas();
-    return true;
-  }
-
-  function renderOffcanvas(){
-    if(!listEl || !emptyEl || !totalEl) return;
-
-    listEl.innerHTML = "";
-    totalEl.textContent = "—";
-
-    const ids = Object.keys(cartState).filter(k => (toNumber(cartState[k])||0) > 0);
-    const has = ids.length > 0;
-
-    emptyEl.classList.toggle("d-none", has);
-    if(!has) return;
-
-    let totalVal = 0;
-    let hasAnyPrice = false;
-
-    for(const id of ids.sort((a,b)=>a.localeCompare(b,"fr"))){
-      const qty = Math.floor(toNumber(cartState[id])||0);
-
-      const row = productByUid.get(id) || null;
-
-      const title = row?.DesComClear || row?.Designation || row?.Libelle || id;
-      const brand = row?.xx_Marque || row?.Marque || "";
-      const veh   = row?.xx_Vehicule || "";
-      const year  = row?.xx_Annee || "";
-      const ref   = row?.Id || row?.ID || row?.UniqueId || id;
-
-      const price = row ? getRowPrice(row) : NaN;
-      if(Number.isFinite(price)){
-        hasAnyPrice = true;
-        totalVal += price * qty;
+        try {
+          bootstrap.Offcanvas.getOrCreateInstance(cartCanvas).show();
+        } catch(err) {
+          console.error(err);
+          window.location.href = btn.getAttribute("href");
+        }
       }
-
-      const div = document.createElement("div");
-      div.className = "cart-item";
-      div.innerHTML = `
-        <div class="cart-thumb">
-          <img src="${escapeHtml(imgUrl(id))}" alt=""
-            onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,${encodeURIComponent(
-              `<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120">
-                 <rect width="100%" height="100%" fill="#f1f3f5"/>
-                 <text x="50%" y="52%" text-anchor="middle" fill="#6c757d" font-family="Arial" font-size="14">No image</text>
-               </svg>`
-            )}';">
-        </div>
-
-        <div class="cart-meta">
-          <div class="cart-title text-truncate">${escapeHtml(title)}</div>
-          <div class="cart-sub">
-            ${brand ? escapeHtml(brand) + " • " : ""}
-            ${veh || year ? escapeHtml([veh, year].filter(Boolean).join(" • ")) + " • " : ""}
-            Réf: ${escapeHtml(ref)}
-          </div>
-          <div class="cart-sub">
-            ${Number.isFinite(price) ? ("PU: " + fmtMoney(price)) : "<span class='text-muted'>PU: —</span>"}
-          </div>
-        </div>
-
-        <div class="d-flex flex-column align-items-end gap-2">
-          <div class="qty-ctrl">
-            <button class="btn btn-outline-secondary btn-sm" data-dec="${escapeHtml(id)}" type="button">-</button>
-            <input class="form-control form-control-sm" data-qty="${escapeHtml(id)}" type="number" min="1" value="${qty}">
-            <button class="btn btn-outline-secondary btn-sm" data-inc="${escapeHtml(id)}" type="button">+</button>
-          </div>
-          <button class="btn btn-outline-danger btn-sm" data-rm="${escapeHtml(id)}" type="button">
-            <i class="bi bi-x-lg"></i>
-          </button>
-        </div>
-      `;
-      listEl.appendChild(div);
-    }
-
-    totalEl.textContent = hasAnyPrice ? fmtMoney(totalVal) : "—";
-  }
-
-  // events
-  if(listEl){
-    listEl.addEventListener("click", async (e)=>{
-      const inc = e.target.closest("[data-inc]")?.getAttribute("data-inc");
-      const dec = e.target.closest("[data-dec]")?.getAttribute("data-dec");
-      const rm  = e.target.closest("[data-rm]")?.getAttribute("data-rm");
-
-      if(inc){
-        const q = Math.floor(toNumber(cartState[inc])||0) + 1;
-        await setQty(inc, q);
-      }
-      if(dec){
-        const q = Math.max(1, Math.floor(toNumber(cartState[dec])||1) - 1);
-        await setQty(dec, q);
-      }
-      if(rm){
-        await remove(rm);
-      }
+      // ailleurs : pas de preventDefault => redirection normale
     });
-
-    listEl.addEventListener("change", async (e)=>{
-      const inp = e.target.closest("[data-qty]");
-      if(!inp) return;
-      const uid = inp.getAttribute("data-qty");
-      const q = Math.max(1, Math.floor(toNumber(inp.value)||1));
-      await setQty(uid, q);
-    });
-  }
-
-  if(btnClear){
-    btnClear.addEventListener("click", async ()=>{ await clear(); });
-  }
-
-  // ✅ sync badge sur toutes les pages (Home incluse)
-  document.addEventListener("DOMContentLoaded", ()=>{ syncState(true).catch(()=>{}); });
-
-  // ✅ quand on ouvre le panier : on sync + on charge infos CSV + render
-  document.addEventListener("show.bs.offcanvas", async (e)=>{
-    if(e.target && e.target.id === "cartCanvas"){
-      await syncState(true);
-      await ensureProductsForCart();
-      renderOffcanvas();
-    }
   });
-
-  // expose
-  window.CartUI = {
-    sync: ()=>syncState(true),
-    setQty,
-    remove,
-    clear,
-    getState: ()=>cartState,
-    setPriceMode: (m)=>{ C.priceMode = m; renderOffcanvas(); }
-  };
-})();
 </script>

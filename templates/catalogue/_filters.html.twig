@@ -1,0 +1,86 @@
+{# templates/catalogue/_filters.html.twig #}
+<div class="filter-card p-3 sticky-filters" id="filtersCard">
+  <div class="d-flex align-items-center justify-content-between mb-2">
+    <div class="fw-semibold"><i class="bi bi-sliders2"></i> Filtres</div>
+    <button id="btnReset2" class="btn btn-sm btn-outline-secondary" type="button">Réinitialiser</button>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">Affichage prix</label>
+    <div class="d-flex gap-2 align-items-center flex-wrap">
+      <div class="form-check">
+        <input class="form-check-input" type="radio" name="priceMode" id="pmInc" value="inc" checked>
+        <label class="form-check-label" for="pmInc">TTC</label>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="radio" name="priceMode" id="pmExc" value="exc">
+        <label class="form-check-label" for="pmExc">HT</label>
+      </div>
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">Affichage stock</label>
+    <div class="d-flex gap-2 flex-wrap">
+      <div class="form-check">
+        <input class="form-check-input" type="radio" name="stockMode" id="smAll" value="all" checked>
+        <label class="form-check-label" for="smAll">Tous</label>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="radio" name="stockMode" id="smIn" value="in">
+        <label class="form-check-label" for="smIn">En stock</label>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="radio" name="stockMode" id="smOut" value="out">
+        <label class="form-check-label" for="smOut">Rupture</label>
+      </div>
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">Marque</label>
+    <select id="fBrand" class="form-select"><option value="">Toutes</option></select>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">Famille</label>
+    <select id="fFamily" class="form-select"><option value="">Toutes</option></select>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">Véhicule</label>
+    <select id="fVehicle" class="form-select"><option value="">Tous</option></select>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">Année</label>
+    <div class="row g-2">
+      <div class="col-6"><input id="fYearMin" class="form-control" type="number" placeholder="Min"></div>
+      <div class="col-6"><input id="fYearMax" class="form-control" type="number" placeholder="Max"></div>
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">Prix</label>
+    <div class="row g-2">
+      <div class="col-6"><input id="fPriceMin" class="form-control" type="number" placeholder="Min"></div>
+      <div class="col-6"><input id="fPriceMax" class="form-control" type="number" placeholder="Max"></div>
+    </div>
+  </div>
+
+  <div class="mb-1">
+    <label class="form-label">Tri</label>
+    <select id="fSort" class="form-select">
+      <option value="relevance">Pertinence</option>
+      <option value="priceAsc">Prix (croissant)</option>
+      <option value="priceDesc">Prix (décroissant)</option>
+      <option value="stockDesc">Stock (décroissant)</option>
+      <option value="az">Nom (A → Z)</option>
+      <option value="newest">Plus récents</option>
+    </select>
+  </div>
+
+  <div class="small text-muted mt-2">
+    Astuce : recherche par marque, véhicule, famille, référence…
+  </div>
+</div>

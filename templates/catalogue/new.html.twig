@@ -6,8 +6,24 @@
   {% include 'catalogue/_catalogue.html.twig' with {
     pageMode: 'new',
     pageTitle: 'Nouveautés',
-    newDays: newDays|default(5),
-    _cart: _cart ?? {},
-    _cartCount: _cartCount ?? 0
+    newDays: newDays|default(5)
   } %}
+{% endblock %}
+
+{% block javascripts %}
+  {{ parent() }}
+
+  <script>
+    window.CATALOG_CONFIG = {
+      csvUrl: "{{ path('catalogue_csv') }}",
+      imagesBase: "https://catalogue.3skpartsauto.com/export_images",
+      pageMode: "new",
+      newDays: {{ newDays|default(5) }},
+      locale: "fr-FR",
+      currency: "MAD"
+    };
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="{{ asset('js/catalogue.js') }}"></script>
 {% endblock %}

@@ -1,37 +1,55 @@
 {# templates/base.html.twig #}
 <!DOCTYPE html>
 <html lang="fr">
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title>{% block title %}Back-office{% endblock %}</title>
+  <title>{% block title %}EBPToWeb{% endblock %}</title>
 
-    {# Bootstrap Icons #}
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
-    {# Bootstrap CSS #}
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="{{ asset('styles/app.css') }}">
 
-    {# ✅ Ton CSS global (APRES Bootstrap) #}
-<link rel="stylesheet" href="{{ asset('styles/app.css') }}">
+  {% block stylesheets %}{% endblock %}
+</head>
 
-    {% block stylesheets %}{% endblock %}
-  </head>
+<body>
+  {% include 'partials/_menu.html.twig' %}
+  {% include 'partials/_cart_offcanvas.html.twig' %}
+  {% include 'partials/_toast_zone.html.twig' %}
 
-  {# ⚠️ Si tu veux gérer le fond dans app.css, évite bg-light #}
-  <body>
-	{% include 'home/sections/_topbar.html.twig' %}
+  <main class="container-fluid py-3">
+    {% block body %}{% endblock %}
+  </main>
 
-    {% include 'partials/_menu.html.twig' %}
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-    <main class="container-fluid py-3">
-      {% block body %}{% endblock %}
-    </main>
+  <script>
+    window.CART_ENDPOINTS = {
+      state: "{{ path('cart_state') }}",
+      add: "{{ path('cart_add') }}",
+      set: "{{ path('cart_set') }}",
+      remove: "{{ path('cart_remove') }}",
+      clear: "{{ path('cart_clear') }}",
+      index: "{{ path('cart_index') }}"
+    };
+  </script>
 
-    {# Bootstrap JS bundle #}
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  {# ✅ panier global (sans prix/total) #}
+<script>
+  window.CART_CONFIG = {
+    csvUrl: "{{ path('catalogue_csv') }}",
+    imagesBase: "https://catalogue.3skpartsauto.com/export_images",
+    locale: "fr-FR",
+    currency: "MAD"
+  };
+</script>
 
-    {% block javascripts %}{% endblock %}
-  </body>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="{{ asset('js/cart-ui.js') }}"></script>
+
+  {% block javascripts %}{% endblock %}
+</body>
 </html>

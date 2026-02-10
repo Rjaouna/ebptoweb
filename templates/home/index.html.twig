@@ -5,52 +5,19 @@
 	{{ app_name|default('AutoParts Pro') }}
 	| Catalogue privé pièces auto
 {% endblock %}
+{% block body %}
 
-{% block stylesheets %}
-	{{ parent() }}
-
-	{# Bootswatch Flatly (Bootstrap 5) #}
-	<link
-	rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.3/dist/flatly/bootstrap.min.css">
-
-	{# Override couleurs Bootstrap via CSS variables (primary/secondary) #}
-	<style>:root
-	{
-		--bs-primary: #ff4f00;
-		--bs-primary-rgb: 255, 79, 0;
-
-		--bs-secondary: #0d6efd;
-		--bs-secondary-rgb: 13, 110, 253;
-
-		--bs-link-color: #0d6efd;
-		--bs-link-hover-color: #0a58ca;
-	}
-
-	/* Petit bonus UX (très léger, reste "Bootstrap-first") */
-	.blur-sm {
-		filter: blur(2px);
-		opacity: .75;
-		pointer-events: none;
-		user-select: none;
-	}
-</style>{% endblock %}{% block body %}
 <div class="container-fluid px-0">
-
-	{% include 'home/sections/_navbar.html.twig' %}
 
 	<main>
 		{% include 'home/sections/_hero.html.twig' %}
-		{% include 'home/sections/_catalogue_preview.html.twig' %}
 		{% include 'home/sections/_categories.html.twig' %}
 		{% include 'home/sections/_how_it_works.html.twig' %}
 		{% include 'home/sections/_quote.html.twig' %}
-		{% include 'home/sections/_contact.html.twig' %}
 	</main>
 
 	{% include 'home/sections/_footer.html.twig' %}
 	{% include 'home/sections/_login_gate_modal.html.twig' %}
 
-</div>{% endblock %}{% block javascripts %}
-{{ parent() }}
- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>{% endblock %}
+</div>{% endblock %}
 
