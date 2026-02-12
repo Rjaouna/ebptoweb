@@ -16,23 +16,38 @@
 </a>
 
 
-      {# Desktop nav #}
-      <div class="d-none d-lg-flex align-items-center gap-2 ms-lg-3">
-        <a class="nav-link app-pill {{ route starts with 'catalogue' ? 'active' : '' }}"
-           href="{{ path('catalogue_index') }}">
-          <i class="bi bi-grid-3x3-gap me-2"></i>Catalogue
-        </a>
+{# Desktop nav (centré) #}
+<div class="d-none d-lg-flex align-items-center gap-2 app-center-nav">
 
-        <a class="nav-link app-pill {{ route == 'catalogue_new' ? 'active' : '' }}"
-           href="{{ path('catalogue_new') }}">
-          <i class="bi bi-stars me-2"></i>Nouveautés
-        </a>
+  <a class="nav-link app-pill {{ route == 'app_home' ? 'active' : '' }}"
+     href="{{ path('app_home') }}">
+    <i class="bi bi-house-door me-2"></i>Accueil
+  </a>
 
-        <a class="nav-link app-pill {{ route == 'admin_ftp_config' ? 'active' : '' }}"
-           href="/admin/integrations/ftp">
-          <i class="bi bi-cloud-arrow-up me-2"></i>FTP / CSV
-        </a>
-      </div>
+  <a class="nav-link app-pill" href="{{path('app_who_we_are')}}">
+    <i class="bi bi-info-circle me-2"></i>Qui sommes-nous
+  </a>
+
+  <a class="nav-link app-pill {{ route == 'catalogue_index' ? 'active' : '' }}"
+     href="{{ path('catalogue_index') }}">
+    <i class="bi bi-grid-3x3-gap me-2"></i>Catalogue
+  </a>
+
+  <a class="nav-link app-pill {{ route == 'catalogue_new' ? 'active' : '' }}"
+     href="{{ path('catalogue_new') }}">
+    <i class="bi bi-stars me-2"></i>Nouveautés
+  </a>
+  <a class="nav-link app-pill {{ route == 'app_faq' ? 'active' : '' }}"
+     href="{{ path('app_faq') }}">
+    <i class="bi bi-stars me-2"></i>Faq
+  </a>
+  <a class="nav-link app-pill" href="{{path('app_contact')}}">
+    <i class="bi bi-envelope me-2"></i>Contactez-nous
+  </a>
+</div>
+
+
+
 
       {# Right actions #}
       <div class="ms-auto d-flex align-items-center gap-2">

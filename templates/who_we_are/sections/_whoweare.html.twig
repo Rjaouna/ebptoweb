@@ -1,0 +1,248 @@
+{# =========================
+   SECTION QUI SOMMES-NOUS (NEW)
+   Images: public/img/hopic/
+   - fondateur-hopic.jpeg
+   - image4.jpeg
+   ========================= #}
+
+<style>
+  .about2{
+    position: relative;
+    border-radius: 28px;
+    overflow: hidden;
+    background:
+      radial-gradient(900px 420px at 10% 0%, rgba(var(--bs-primary-rgb), .12), transparent 55%),
+      radial-gradient(700px 380px at 90% 100%, rgba(13,110,253,.08), transparent 60%),
+      #fff;
+    border: 1px solid rgba(15,23,42,.07);
+    box-shadow: 0 18px 55px rgba(2,6,23,.08);
+  }
+
+  .about2-inner{ padding: clamp(1.1rem, 2.4vw, 2.1rem); }
+
+  .about2-kicker{
+    display:inline-flex;
+    align-items:center;
+    gap:.55rem;
+    padding:.38rem .7rem;
+    border-radius:999px;
+    font-weight:800;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    font-size:.78rem;
+    color: var(--bs-primary);
+    background: rgba(var(--bs-primary-rgb), .10);
+    border: 1px solid rgba(var(--bs-primary-rgb), .16);
+  }
+
+  .about2-title{
+    font-weight: 900;
+    letter-spacing:-.03em;
+    font-size: clamp(1.7rem, 2.7vw, 2.45rem);
+    margin: .85rem 0 .6rem;
+    line-height: 1.12;
+  }
+
+  .about2-lead{
+    color:#495057;
+    font-size: 1.06rem;
+    line-height: 1.75;
+    margin: 0;
+  }
+
+  .about2-grid{
+    display:grid;
+    grid-template-columns: 1.2fr .8fr;
+    gap: clamp(1rem, 2vw, 1.6rem);
+    align-items: stretch;
+  }
+
+  .about2-media{
+    border-radius: 22px;
+    overflow:hidden;
+    background:#0b1220;
+    position: relative;
+    min-height: 320px;
+  }
+
+  .about2-media img{
+    width:100%;
+    height:100%;
+    object-fit: cover;
+    display:block;
+    opacity:.92;
+    transform: scale(1.01);
+  }
+
+  .about2-badge{
+    position:absolute;
+    left:14px;
+    top:14px;
+    background: rgba(255,255,255,.92);
+    border: 1px solid rgba(15,23,42,.10);
+    border-radius: 999px;
+    padding: .35rem .6rem;
+    font-size: .86rem;
+    font-weight: 800;
+    backdrop-filter: blur(10px);
+  }
+
+  .about2-quote{
+    position:absolute;
+    left:14px;
+    right:14px;
+    bottom:14px;
+    background: rgba(255,255,255,.92);
+    border: 1px solid rgba(15,23,42,.10);
+    border-radius: 18px;
+    padding: .8rem .9rem;
+    backdrop-filter: blur(12px);
+  }
+  .about2-quote .mini{
+    font-size:.92rem;
+    color:#6c757d;
+    line-height:1.45;
+    margin:0;
+  }
+  .about2-quote strong{ color: var(--bs-primary); }
+
+  .about2-points{
+    display:grid;
+    gap:.65rem;
+    margin-top: 1.05rem;
+  }
+  .about2-point{
+    display:flex;
+    gap:.75rem;
+    align-items:flex-start;
+    padding:.75rem .85rem;
+    border-radius: 16px;
+    background: rgba(2,6,23,.03);
+    border: 1px solid rgba(15,23,42,.06);
+  }
+  .about2-point i{
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    display:grid;
+    place-items:center;
+    background: rgba(var(--bs-primary-rgb), .12);
+    color: var(--bs-primary);
+    flex: 0 0 auto;
+    margin-top: 1px;
+  }
+  .about2-point b{ display:block; line-height:1.2; }
+  .about2-point span{ color:#6c757d; font-size:.95rem; line-height:1.4; }
+
+  /* second row */
+  .about2-split{
+    display:grid;
+    grid-template-columns: .9fr 1.1fr;
+    gap: clamp(1rem, 2vw, 1.6rem);
+    align-items: center;
+    margin-top: clamp(1.1rem, 2.4vw, 1.8rem);
+    padding-top: clamp(1rem, 2.2vw, 1.5rem);
+    border-top: 1px solid rgba(15,23,42,.07);
+  }
+
+  .about2-media.contain img{
+    object-fit: contain;
+    background: #f8f9fa;
+    opacity: 1;
+    transform:none;
+  }
+
+  .about2-subtitle{
+    font-weight: 900;
+    letter-spacing:-.02em;
+    font-size: clamp(1.25rem, 2.2vw, 1.85rem);
+    margin: .7rem 0 .55rem;
+    line-height:1.22;
+  }
+
+  @media (max-width: 991.98px){
+    .about2-grid,
+    .about2-split{
+      grid-template-columns: 1fr;
+    }
+    .about2-media{ min-height: 240px; }
+  }
+</style>
+
+<section class="container px-3 px-lg-4 my-4">
+  <div class="about2">
+    <div class="about2-inner">
+
+      {# --- TOP --- #}
+      <div class="about2-grid">
+        <div>
+          <span class="about2-kicker"><i class="bi bi-info-circle"></i> À propos</span>
+          <h2 class="about2-title">Qui sommes-nous ?</h2>
+
+          <p class="about2-lead">
+            Depuis 1993, notre fondateur <strong><em>Mohamed Saad Benamour</em></strong> développe une entreprise marocaine
+            spécialisée dans la distribution de pièces automobiles.
+            Aujourd’hui, nous sommes reconnus comme un <strong>acteur majeur</strong> de notre segment, avec une exigence constante :
+            <strong>la qualité</strong> et la satisfaction client.
+          </p>
+
+          <div class="about2-points">
+            <div class="about2-point">
+              <i class="bi bi-award"></i>
+              <div>
+                <b>Qualité contrôlée</b>
+                <span>Importation, vérification et distribution de gammes techniques.</span>
+              </div>
+            </div>
+            <div class="about2-point">
+              <i class="bi bi-people"></i>
+              <div>
+                <b>Accompagnement client</b>
+                <span>Conseil et réponse précise aux besoins du marché marocain.</span>
+              </div>
+            </div>
+            <div class="about2-point">
+              <i class="bi bi-globe"></i>
+              <div>
+                <b>Partenariats solides</b>
+                <span>Collaboration avec des équipementiers mondiaux et des clients renommés.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="about2-media">
+          <span class="about2-badge">Fondateur</span>
+          <img src="{{ asset('img/hopic/fondateur-hopic.jpeg') }}" alt="Fondateur HOPIC" loading="lazy">
+          <div class="about2-quote">
+            <p class="mini m-0">
+              Une vision, une exigence : <strong>la qualité</strong>.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {# --- BOTTOM --- #}
+      <div class="about2-split">
+        <div class="about2-media contain">
+          <span class="about2-badge">Distribution</span>
+          <img src="{{ asset('img/hopic/image4.jpeg') }}" alt="HOPIC - Pièces automobiles" loading="lazy">
+        </div>
+
+        <div>
+          <span class="about2-kicker"><i class="bi bi-shield-check"></i> Engagement</span>
+          <h3 class="about2-subtitle">
+            Toute notre énergie pour proposer <strong>des pièces automobiles hors pair</strong>.
+          </h3>
+
+          <p class="about2-lead">
+            Dirigée par Mohamed Saad Benamour, notre entreprise importe, contrôle et distribue des pièces techniques pour la rechange automobile.
+            Nous avons construit une stratégie multicanaux fondée sur l’accompagnement et la réponse aux besoins réels du marché marocain.
+            Notre culture d’entreprise et nos partenariats nous permettent de jouer un rôle majeur dans le secteur automobile au Maroc.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>

@@ -1,0 +1,197 @@
+{# ---- HERO CAROUSEL (TEXT INSIDE IMAGE, IMAGE ORIGINAL SIZE) ---- #}
+
+<style>
+  /* Container */
+  .hero-carousel{
+    --pad: clamp(14px, 2.2vw, 26px);
+  }
+
+  .hero-carousel .carousel-inner{
+    border: 1px solid rgba(15,23,42,.10);
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 14px 40px rgba(2,6,23,.08);
+  }
+
+  /* Slide layout: center image with its natural size */
+  .hero-slide{
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: var(--pad);
+    /* pas de background demandé -> rien ici */
+  }
+
+  /* Image: original size, responsive */
+  .hero-img{
+    width: 100%;             /* <= taille naturelle */
+    height: auto;            /* <= taille naturelle */
+    max-width: 100%;         /* responsive */
+    max-height: 520px;       /* évite que ça prenne trop de place */
+    display: block;
+  }
+
+  /* Soft overlay gradient for text readability (on top of the image only) */
+  .hero-slide::after{
+    content:"";
+    position:absolute;
+    inset: var(--pad);
+    border-radius: 14px;
+  
+    pointer-events:none;
+  }
+
+  /* Text overlay inside the image */
+  .hero-overlay{
+    position:absolute;
+    inset: var(--pad);
+    border-radius: 14px;
+    display:flex;
+    align-items:flex-end;
+    padding: clamp(12px, 2vw, 22px);
+    z-index: 2;
+    pointer-events:none; /* on réactive uniquement sur les boutons */
+  }
+
+.hero-card {
+    pointer-events: auto;
+    max-width: 760px;
+    color: #fff;
+    background: rgb(2 6 23 / 18%);
+    border: 1px solid rgba(255, 255, 255, .18);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 18px;
+    padding: 16px 18px;
+    box-shadow: 0 18px 55px rgba(0, 0, 0, .20);
+}
+
+  .hero-kicker{
+    display:inline-flex;
+    align-items:center;
+    gap:.55rem;
+    font-weight: 800;
+    letter-spacing: .10em;
+    font-size: .78rem;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.92);
+    padding: .35rem .7rem;
+    border-radius: 999px;
+    margin-bottom: .6rem;
+  }
+
+  .hero-title{
+    font-weight: 900;
+    font-size: clamp(1.25rem, 2.4vw, 2.15rem);
+    line-height: 1.08;
+    margin: 0;
+    text-shadow: 0 10px 30px rgba(0,0,0,.25);
+  }
+
+  .hero-text{
+    margin: .55rem 0 1rem;
+    color: rgba(255,255,255,.88);
+    font-size: 1.02rem;
+    max-width: 58ch;
+  }
+
+  /* Buttons modern */
+  .hero-card .btn{
+    border-radius: 999px;
+    padding-inline: 1.15rem;
+    font-weight: 700;
+  }
+  .btn-glass{
+    color:#fff;
+    background: rgba(255,255,255,.10);
+    border: 1px solid rgba(255,255,255,.22);
+  }
+  .btn-glass:hover{
+    color:#fff;
+    background: rgba(255,255,255,.16);
+  }
+
+  /* Indicators */
+  .hero-carousel .carousel-indicators [data-bs-target]{
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+  }
+
+  /* Mobile: overlay a little higher */
+  @media (max-width: 576px){
+    .hero-img{ max-height: 420px; }
+    .hero-text{ font-size: .95rem; }
+    .hero-card{ padding: 14px 14px; }
+  }
+</style>
+
+<section class="container px-3 px-lg-4 my-3">
+  <div id="heroCarousel" class="carousel slide hero-carousel" data-bs-ride="carousel" data-bs-interval="6500">
+    <div class="carousel-indicators">
+      <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="0"
+              class="active" aria-current="true" aria-label="Slide 1"></button>
+      <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="1"
+              aria-label="Slide 2"></button>
+    </div>
+
+    <div class="carousel-inner">
+
+      {# Slide 1 #}
+      <div class="carousel-item active">
+        <div class="hero-slide">
+          {# ✅ garde tes liens #}
+          <img src="{{ asset('img/slide1.jpg') }}" class="hero-img" alt="Pièces auto - Catalogue">
+
+          <div class="hero-overlay">
+            <div class="hero-card">
+         
+            
+              <div class="d-flex gap-2 flex-wrap">
+                <a href="{{ path('catalogue_index') }}" class="btn btn-primary">
+                  <i class="bi bi-grid-3x3-gap me-2"></i>Voir le catalogue
+                </a>
+                <a href="{{ path('catalogue_new') }}" class="btn btn-glass">
+                  <i class="bi bi-stars me-2"></i>Nouveautés
+                </a>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      {# Slide 2 #}
+      <div class="carousel-item">
+        <div class="hero-slide">
+          {# ✅ garde tes liens #}
+          <img src="{{ asset('img/slide2.jpg') }}" class="hero-img" alt="Pièces auto - Stock & livraison">
+
+          <div class="hero-overlay">
+            <div class="hero-card">
+          <div class="d-flex gap-2 flex-wrap">
+                <a href="{{ path('catalogue_index') }}" class="btn btn-primary">
+                  <i class="bi bi-grid-3x3-gap me-2"></i>Voir le catalogue
+                </a>
+                <a href="{{ path('catalogue_new') }}" class="btn btn-glass">
+                  <i class="bi bi-stars me-2"></i>Nouveautés
+                </a>
+              </div>
+            </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
+      <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+      <span class="visually-hidden">Previous</span>
+    </button>
+    <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
+      <span class="carousel-control-next-icon" aria-hidden="true"></span>
+      <span class="visually-hidden">Next</span>
+    </button>
+  </div>
+</section>

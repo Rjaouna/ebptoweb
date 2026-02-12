@@ -3,6 +3,12 @@
 {% block title %}Catalogue{% endblock %}
 
 {% block body %}
+  {% if csvLocalExists is defined and not csvLocalExists %}
+    <div class="alert alert-warning">
+      CSV local non trouvé. Va dans l’admin FTP et clique sur <b>TEST/SYNC</b> pour télécharger le fichier.
+    </div>
+  {% endif %}
+
   {% include 'catalogue/_catalogue.html.twig' with {
     pageMode: 'all',
     pageTitle: 'Catalogue',
@@ -15,15 +21,16 @@
 
   <script>
     window.CATALOG_CONFIG = {
-      csvUrl: "{{ path('catalogue_csv') }}",
-      imagesBase: "https://catalogue.3skpartsauto.com/export_images",
+      csvUrl: "{{ csvUrl|e('js') }}",
+      imagesBase: "{{ imagesBase|e('js') }}",
       pageMode: "all",
       newDays: 5,
       locale: "fr-FR",
       currency: "MAD"
     };
+    console.log("CATALOG_CONFIG", window.CATALOG_CONFIG);
   </script>
 
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  {# PapaParse est déjà dans base.html.twig chez toi -> ne pas le remettre #}
   <script src="{{ asset('js/catalogue.js') }}"></script>
 {% endblock %}

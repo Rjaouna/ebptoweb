@@ -1,9 +1,134 @@
 {# templates/partials/_topbar.html.twig #}
-<div class="topbar-glass">
-  <div class="container-fluid px-3 px-lg-4 py-2 d-flex justify-content-between align-items-center">
-    <div class="small text-muted">Catalogue & export</div>
-    <div class="small text-muted">
-      {% if app.user %}Connecté : {{ app.user.email }}{% else %}Invité{% endif %}
+<div class="topbar-glass d-none d-lg-block">
+  <div class="container-fluid px-3 px-lg-4 py-2">
+    <div class="d-flex align-items-center justify-content-between gap-3">
+
+      {# Left: 2 infos #}
+      <div class="d-flex align-items-center gap-4 topbar-left">
+
+        <div class="d-flex align-items-start gap-2">
+          <div class="topbar-ico">
+            <i class="bi bi-truck"></i>
+          </div>
+          <div class="lh-sm">
+            <div class="fw-semibold topbar-strong">Livraison partout au Maroc</div>
+            <div class="topbar-muted">Sous J+1</div>
+          </div>
+        </div>
+
+        <div class="topbar-sep"></div>
+
+        <div class="d-flex align-items-start gap-2">
+          <div class="topbar-ico">
+            <i class="bi bi-boxes"></i>
+          </div>
+          <div class="lh-sm">
+            <div class="fw-semibold topbar-strong">+ de 6000 pièces</div>
+            <div class="topbar-muted">Disponibles en stock</div>
+          </div>
+        </div>
+
+      </div>
+
+      {# Right: account + socials #}
+      <div class="d-flex align-items-center gap-2">
+
+      
+
+
+        <a class="topbar-social" href="#" target="_blank" rel="noopener nofollow" aria-label="Facebook" title="Facebook">
+          <i class="bi bi-facebook"></i>
+        </a>
+        <a class="topbar-social" href="#" target="_blank" rel="noopener nofollow" aria-label="Instagram" title="Instagram">
+          <i class="bi bi-instagram"></i>
+        </a>
+        <a class="topbar-social" href="#" target="_blank" rel="noopener nofollow" aria-label="Google" title="Google">
+          <i class="bi bi-google"></i>
+        </a>
+
+      </div>
     </div>
   </div>
 </div>
+
+<style>
+  .topbar-glass{
+    background: rgba(255,255,255,.70);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid rgba(15,23,42,.08);
+  }
+
+  .topbar-muted{
+    color: rgba(15,23,42,.65);
+    font-size: .85rem;
+  }
+
+  .topbar-strong{
+    color: var(--bs-primary);
+    font-size: .90rem;
+  }
+
+  .topbar-ico{
+    width: 34px;
+    height: 34px;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    background: rgba(var(--bs-primary-rgb), .10);
+    color: var(--bs-primary);
+    border: 1px solid rgba(var(--bs-primary-rgb), .18);
+    flex: 0 0 auto;
+  }
+  .topbar-ico i{ font-size: 18px; }
+
+  .topbar-sep{
+    width: 1px;
+    height: 26px;
+    background: rgba(15,23,42,.10);
+  }
+
+  .topbar-btn{
+    border-radius: 999px;
+    padding: .35rem .75rem;
+    font-weight: 700;
+  }
+
+  .topbar-social{
+    width: 34px;
+    height: 34px;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    text-decoration: none;
+
+    color: var(--bs-secondary);
+    border: 1px solid rgba(15,23,42,.12);
+    background: rgba(255,255,255,.75);
+    transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+  .topbar-social:hover{
+    background: rgba(var(--bs-primary-rgb), .10);
+    color: var(--bs-primary);
+    transform: translateY(-1px);
+    box-shadow: 0 12px 24px rgba(2,6,23,.10);
+  }
+
+  .topbar-user{
+    padding: .35rem .65rem;
+    border-radius: 999px;
+    background: rgba(255,255,255,.65);
+    border: 1px solid rgba(15,23,42,.10);
+  }
+  .topbar-dot{
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: #16a34a;
+    box-shadow: 0 0 0 3px rgba(22,163,74,.12);
+  }
+
+  @media (max-width: 1200px){
+    .topbar-left{ gap: 1.25rem !important; }
+  }
+</style>

@@ -1,0 +1,330 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Hello FaqController!{% endblock %}
+
+{% block body %}
+{# =========================
+   PAGE FAQ (Bootstrap 5)
+   - Accordéon accessible
+   - Recherche rapide (JS)
+   - CTA Devenir partenaire
+   ========================= #}
+
+<style>
+  .faq-hero{
+    border-radius: 28px;
+    overflow: hidden;
+    border: 1px solid rgba(15,23,42,.07);
+    background:
+      radial-gradient(900px 420px at 10% 0%, rgba(var(--bs-primary-rgb), .12), transparent 55%),
+      radial-gradient(700px 380px at 90% 100%, rgba(var(--bs-primary-rgb), .08), transparent 60%),
+      #fff;
+    box-shadow: 0 18px 55px rgba(2,6,23,.08);
+  }
+  .faq-hero-inner{ padding: clamp(1.2rem, 2.6vw, 2.2rem); }
+
+  .faq-kicker{
+    display:inline-flex;
+    align-items:center;
+    gap:.55rem;
+    padding:.38rem .7rem;
+    border-radius:999px;
+    font-weight:800;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    font-size:.78rem;
+    color: var(--bs-primary);
+    background: rgba(var(--bs-primary-rgb), .10);
+    border: 1px solid rgba(var(--bs-primary-rgb), .16);
+  }
+  .faq-title{
+    margin: .85rem 0 .45rem;
+    font-weight: 950;
+    letter-spacing: -.03em;
+    font-size: clamp(1.7rem, 3vw, 2.5rem);
+    line-height: 1.12;
+  }
+  .faq-sub{
+    color:#6c757d;
+    margin:0;
+    font-size: 1.05rem;
+    line-height: 1.7;
+    max-width: 70ch;
+  }
+
+  .faq-panel{
+    border-radius: 24px;
+    border: 1px solid rgba(15,23,42,.07);
+    background: #fff;
+    box-shadow: 0 12px 35px rgba(2,6,23,.06);
+    overflow: hidden;
+  }
+  .faq-panel-head{
+    padding: clamp(1rem, 2.2vw, 1.6rem);
+    border-bottom: 1px solid rgba(15,23,42,.06);
+    display:flex;
+    gap: .9rem;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+  .faq-search{
+    min-width: min(520px, 100%);
+  }
+  .faq-hint{
+    margin: 0;
+    color:#6c757d;
+    font-size: .95rem;
+  }
+
+  /* accordéon look */
+  .accordion.faq-acc .accordion-item{
+    border: 0;
+    border-top: 1px solid rgba(15,23,42,.06);
+  }
+  .accordion.faq-acc .accordion-item:first-child{
+    border-top: 0;
+  }
+  .accordion.faq-acc .accordion-button{
+    font-weight: 900;
+    letter-spacing: -.01em;
+    padding: 1.05rem 1.1rem;
+  }
+  .accordion.faq-acc .accordion-button:not(.collapsed){
+    background: rgba(var(--bs-primary-rgb), .06);
+    color: #0b1220;
+    box-shadow: none;
+  }
+  .accordion.faq-acc .accordion-body{
+    color:#495057;
+    line-height: 1.75;
+    padding: 0 1.1rem 1.1rem;
+  }
+
+  .faq-empty{
+    display:none;
+    padding: 1.2rem 1.1rem;
+    color:#6c757d;
+  }
+
+  .faq-cta{
+    border-radius: 24px;
+    border: 1px solid rgba(15,23,42,.07);
+    background: rgba(2,6,23,.03);
+    padding: clamp(1rem, 2vw, 1.4rem);
+  }
+</style>
+
+<section class="container px-3 px-lg-4 my-4">
+
+  {# HERO #}
+  <div class="faq-hero mb-3">
+    <div class="faq-hero-inner">
+      <span class="faq-kicker"><i class="bi bi-patch-question"></i> Centre d’aide</span>
+      <h1 class="faq-title mb-2">FAQ HOPIC</h1>
+      <p class="faq-sub">
+        Retrouvez les réponses aux questions les plus fréquentes : compte professionnel, pièces, garantie, livraison, etc.
+      </p>
+
+      <div class="d-flex gap-2 flex-wrap mt-3">
+        <a class="btn btn-primary rounded-pill px-4" href="https://hopic.ma/devenir-partenir/">
+          <i class="bi bi-person-check me-1"></i> Devenir partenaire
+        </a>
+        <a class="btn btn-outline-primary rounded-pill px-4" href="#faq">
+          <i class="bi bi-search me-1"></i> Voir les questions
+        </a>
+      </div>
+    </div>
+  </div>
+
+  {# FAQ PANEL #}
+  <div id="faq" class="faq-panel">
+    <div class="faq-panel-head">
+      <div>
+        <div class="fw-bold"><i class="bi bi-lightning-charge me-1"></i> Questions fréquentes</div>
+        <p class="faq-hint">Astuce : tape un mot (ex. “livraison”, “garantie”, “compte”) pour filtrer.</p>
+      </div>
+
+      <div class="faq-search">
+        <div class="input-group">
+          <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+          <input id="faqSearch" type="text" class="form-control" placeholder="Rechercher dans la FAQ…">
+          <button id="faqClear" class="btn btn-outline-secondary" type="button">Effacer</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="faq-empty" id="faqEmpty">
+      <i class="bi bi-emoji-frown me-1"></i> Aucun résultat. Essaie un autre mot-clé.
+    </div>
+
+    <div class="accordion faq-acc" id="faqAccordion">
+
+      {# 1 #}
+      <div class="accordion-item faq-item">
+        <h2 class="accordion-header" id="h1">
+          <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#c1" aria-expanded="true" aria-controls="c1">
+            Comment créer un compte professionnel chez HOPIC ?
+          </button>
+        </h2>
+        <div id="c1" class="accordion-collapse collapse show" aria-labelledby="h1" data-bs-parent="#faqAccordion">
+          <div class="accordion-body">
+            Tout simplement en remplissant le formulaire
+            <a href="https://hopic.ma/devenir-partenir/">« Faire une demande de création de compte »</a>,
+            disponible sur la page Devenir partenaire HOPIC.
+          </div>
+        </div>
+      </div>
+
+      {# 2 #}
+      <div class="accordion-item faq-item">
+        <h2 class="accordion-header" id="h2">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#c2" aria-expanded="false" aria-controls="c2">
+            HOPIC a-t-il des pièces détachées pour tout type de marque de voiture ?
+          </button>
+        </h2>
+        <div id="c2" class="accordion-collapse collapse" aria-labelledby="h2" data-bs-parent="#faqAccordion">
+          <div class="accordion-body">
+            Vous trouverez des pièces détachées pour la grande majorité des marques et modèles de voiture.
+          </div>
+        </div>
+      </div>
+
+      {# 3 #}
+      <div class="accordion-item faq-item">
+        <h2 class="accordion-header" id="h3">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#c3" aria-expanded="false" aria-controls="c3">
+            Les produits HOPIC sont-ils garantis ?
+          </button>
+        </h2>
+        <div id="c3" class="accordion-collapse collapse" aria-labelledby="h3" data-bs-parent="#faqAccordion">
+          <div class="accordion-body">
+            HOPIC sélectionne rigoureusement les différents équipementiers automobiles.
+            Les produits sont garantis par un système de tests poussés et de contrôle technique.
+          </div>
+        </div>
+      </div>
+
+      {# 4 #}
+      <div class="accordion-item faq-item">
+        <h2 class="accordion-header" id="h4">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#c4" aria-expanded="false" aria-controls="c4">
+            Quel est le mode de livraison utilisé par HOPIC ?
+          </button>
+        </h2>
+        <div id="c4" class="accordion-collapse collapse" aria-labelledby="h4" data-bs-parent="#faqAccordion">
+          <div class="accordion-body">
+            HOPIC choisit avec vous le moyen de livraison le plus adapté à vos besoins.
+          </div>
+        </div>
+      </div>
+
+      {# 5 #}
+      <div class="accordion-item faq-item">
+        <h2 class="accordion-header" id="h5">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#c5" aria-expanded="false" aria-controls="c5">
+            Les pièces automobiles commercialisées par HOPIC sont-elles neuves ou d’occasions ?
+          </button>
+        </h2>
+        <div id="c5" class="accordion-collapse collapse" aria-labelledby="h5" data-bs-parent="#faqAccordion">
+          <div class="accordion-body">
+            HOPIC vous propose des pièces automobiles neuves, d’une qualité indétrônable.
+          </div>
+        </div>
+      </div>
+
+      {# 6 #}
+      <div class="accordion-item faq-item">
+        <h2 class="accordion-header" id="h6">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#c6" aria-expanded="false" aria-controls="c6">
+            Je suis un particulier, puis-je utiliser le site HOPIC ?
+          </button>
+        </h2>
+        <div id="c6" class="accordion-collapse collapse" aria-labelledby="h6" data-bs-parent="#faqAccordion">
+          <div class="accordion-body">
+            HOPIC est un équipementier multi-spécialiste dédié aux entreprises automobiles
+            (distribution moteur, embrayage, roulements de roues, pièces de liaison au sol).
+          </div>
+        </div>
+      </div>
+
+      {# 7 #}
+      <div class="accordion-item faq-item">
+        <h2 class="accordion-header" id="h7">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#c7" aria-expanded="false" aria-controls="c7">
+            J’ai oublié mon identifiant, comment me connecter sur mon compte HOPIC ?
+          </button>
+        </h2>
+        <div id="c7" class="accordion-collapse collapse" aria-labelledby="h7" data-bs-parent="#faqAccordion">
+          <div class="accordion-body">
+            Nous vous invitons à remplir le formulaire de
+            <a href="https://hopic.ma/devenir-partenir/">« demande de création de compte »</a>.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  {# CTA bas de page #}
+  <div class="faq-cta mt-3 d-flex align-items-center justify-content-between gap-3 flex-wrap">
+    <div>
+      <div class="fw-bold">Vous ne trouvez pas votre réponse ?</div>
+      <div class="text-muted">Faites une demande ou contactez-nous, on vous répond rapidement.</div>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a class="btn btn-primary rounded-pill px-4" href="https://hopic.ma/devenir-partenir/">
+        <i class="bi bi-person-plus me-1"></i> Demander un compte pro
+      </a>
+      <a class="btn btn-outline-secondary rounded-pill px-4" href="mailto:contact@hopic.ma">
+        <i class="bi bi-envelope me-1"></i> Contacter HOPIC
+      </a>
+    </div>
+  </div>
+
+</section>
+
+<script>
+  (function(){
+    const input = document.getElementById('faqSearch');
+    const clearBtn = document.getElementById('faqClear');
+    const items = Array.from(document.querySelectorAll('.faq-item'));
+    const empty = document.getElementById('faqEmpty');
+    const acc = document.getElementById('faqAccordion');
+
+    function normalize(s){
+      return (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    }
+
+    function filter(){
+      const q = normalize(input.value.trim());
+      let visibleCount = 0;
+
+      items.forEach(item => {
+        const text = normalize(item.innerText);
+        const show = !q || text.includes(q);
+        item.style.display = show ? '' : 'none';
+        if(show) visibleCount++;
+      });
+
+      empty.style.display = visibleCount ? 'none' : 'block';
+
+      // Si recherche active, on referme tout pour éviter confusion
+      if(q){
+        acc.querySelectorAll('.accordion-collapse.show').forEach(el => el.classList.remove('show'));
+        acc.querySelectorAll('.accordion-button').forEach(btn => btn.classList.add('collapsed'));
+      }
+    }
+
+    input?.addEventListener('input', filter);
+    clearBtn?.addEventListener('click', () => {
+      input.value = '';
+      filter();
+      input.focus();
+    });
+
+    filter();
+  })();
+</script>
+
+{% endblock %}

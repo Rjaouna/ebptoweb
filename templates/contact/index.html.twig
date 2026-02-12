@@ -1,0 +1,247 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Contact{% endblock %}
+
+{% block body %}
+<style>
+  .contact-wrap{
+    max-width: 980px;
+    margin: 0 auto;
+  }
+  .contact-card{
+    border: 1px solid rgba(15,23,42,.08);
+    border-radius: 22px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 18px 40px rgba(2,6,23,.06);
+  }
+  .contact-side{
+    background: rgba(var(--bs-primary-rgb), .08);
+    border-right: 1px solid rgba(15,23,42,.06);
+  }
+  .contact-title{
+    font-weight: 900;
+    letter-spacing: -.02em;
+  }
+  .form-label{ font-weight: 800; }
+  .chip{
+    display:inline-flex;
+    align-items:center;
+    gap:.5rem;
+    padding:.5rem .75rem;
+    border-radius: 999px;
+    border:1px solid rgba(15,23,42,.12);
+    background:#fff;
+    font-weight: 800;
+    cursor:pointer;
+    user-select:none;
+  }
+  .chip input{ margin:0; }
+  .chip:hover{
+    border-color: rgba(var(--bs-primary-rgb), .35);
+    box-shadow: 0 10px 22px rgba(2,6,23,.06);
+  }
+  .help-error{
+    color: var(--bs-danger);
+    font-size: .875rem;
+    margin-top: .35rem;
+    display:none;
+  }
+  .is-invalid + .help-error{ display:block; }
+  .btn-pill{
+    border-radius: 999px;
+    font-weight: 900;
+    padding: .75rem 1.1rem;
+  }
+</style>
+
+<section class="container-fluid my-4">
+  <div class="contact-wrap">
+    <div class="contact-card">
+      <div class="row g-0">
+
+        <div class="col-lg-4 contact-side p-4">
+          <div class="d-flex align-items-center gap-2 mb-3">
+            <span class="badge rounded-pill text-bg-primary px-3 py-2">
+              <i class="bi bi-envelope me-1"></i> Contact
+            </span>
+          </div>
+          <h2 class="contact-title mb-2">Parlons de votre besoin</h2>
+          <p class="text-muted mb-0">
+            Sélectionnez le service concerné, puis envoyez-nous votre message.
+            Réponse rapide pendant les heures ouvrables.
+          </p>
+        </div>
+
+        <div class="col-lg-8 p-4 p-lg-5">
+          <form id="contactForm" class="needs-validation" novalidate>
+            <input type="hidden" name="_token" value="{{ csrf_token('contact_form') }}">
+            {# Honeypot #}
+            <input type="text" name="website" autocomplete="off" tabindex="-1" class="d-none" aria-hidden="true">
+
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label" for="cName">Nom complet <span class="text-danger">*</span></label>
+                <input id="cName" name="name" type="text" class="form-control" placeholder="Votre nom complet" required>
+                <div class="help-error">Nom complet obligatoire.</div>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label" for="cEmail">Email <span class="text-danger">*</span></label>
+                <input id="cEmail" name="email" type="email" class="form-control" placeholder="ex: nom@domaine.com" required>
+                <div class="help-error">Email invalide.</div>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label mb-2">Service <span class="text-danger">*</span></label>
+                <div class="d-flex flex-wrap gap-2" id="serviceWrap">
+                  <label class="chip">
+                    <input type="checkbox" name="services[]" value="Service après-vente">
+                    <span>Service après-vente</span>
+                  </label>
+                  <label class="chip">
+                    <input type="checkbox" name="services[]" value="Service traitement de commande">
+                    <span>Service traitement de commande</span>
+                  </label>
+                  <label class="chip">
+                    <input type="checkbox" name="services[]" value="Service technique">
+                    <span>Service technique</span>
+                  </label>
+                </div>
+                <div class="help-error" id="servicesError">Choisis au moins un service.</div>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label" for="cMsg">Message <span class="text-danger">*</span></label>
+                <textarea id="cMsg" name="message" rows="5" class="form-control" placeholder="Détaille ta demande..." required></textarea>
+                <div class="help-error">Message trop court.</div>
+              </div>
+
+              <div class="col-12 d-flex align-items-center justify-content-between gap-2 flex-wrap">
+                <div class="small text-muted" id="formHint">Tous les champs marqués * sont obligatoires.</div>
+
+                <button id="btnSend" class="btn btn-primary btn-pill" type="submit">
+                  <span class="me-2" id="btnIcon"><i class="bi bi-send"></i></span>
+                  Envoyer
+                </button>
+              </div>
+
+              <div class="col-12">
+                <div class="alert alert-success d-none" id="okBox"></div>
+                <div class="alert alert-danger d-none" id="errBox"></div>
+              </div>
+            </div>
+          </form>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+(function(){
+  const form = document.getElementById('contactForm');
+  const btn = document.getElementById('btnSend');
+  const okBox = document.getElementById('okBox');
+  const errBox = document.getElementById('errBox');
+  const servicesError = document.getElementById('servicesError');
+
+  function setLoading(isLoading){
+    btn.disabled = isLoading;
+    btn.innerHTML = isLoading
+      ? `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Envoi...`
+      : `<span class="me-2"><i class="bi bi-send"></i></span>Envoyer`;
+  }
+
+  function clearAlerts(){
+    okBox.classList.add('d-none'); okBox.textContent = '';
+    errBox.classList.add('d-none'); errBox.textContent = '';
+  }
+
+  function invalidateField(name){
+    const field = form.querySelector(`[name="${name}"]`);
+    if(field){
+      field.classList.add('is-invalid');
+      field.addEventListener('input', () => field.classList.remove('is-invalid'), { once: true });
+    }
+  }
+
+  function validateServices(){
+    const checked = form.querySelectorAll('input[name="services[]"]:checked').length;
+    if(checked < 1){
+      servicesError.style.display = 'block';
+      return false;
+    }
+    servicesError.style.display = 'none';
+    return true;
+  }
+
+  // hide error on check
+  form.querySelectorAll('input[name="services[]"]').forEach(cb => {
+    cb.addEventListener('change', validateServices);
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    clearAlerts();
+
+    // reset invalid states
+    form.querySelectorAll('.is-invalid').forEach(x => x.classList.remove('is-invalid'));
+
+    // simple HTML validation + services
+    const nativeOk = form.checkValidity();
+    const servicesOk = validateServices();
+
+    if(!nativeOk || !servicesOk){
+      // mark required fields invalid
+      ['name','email','message'].forEach((n) => {
+        const f = form.querySelector(`[name="${n}"]`);
+        if(f && !f.checkValidity()) f.classList.add('is-invalid');
+      });
+      return;
+    }
+
+    const fd = new FormData(form);
+
+    setLoading(true);
+    try{
+      const res = await fetch('{{ path('app_contact_send') }}', {
+        method: 'POST',
+        body: fd,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if(!res.ok || !data || data.ok !== true){
+        const msg = (data && data.message) ? data.message : "Erreur lors de l'envoi.";
+        errBox.textContent = msg;
+        errBox.classList.remove('d-none');
+
+        if(data && data.field){
+          if(data.field === 'services'){
+            servicesError.style.display = 'block';
+          }else{
+            invalidateField(data.field);
+          }
+        }
+        return;
+      }
+
+      okBox.textContent = data.message || "Message envoyé. Merci !";
+      okBox.classList.remove('d-none');
+      form.reset();
+      servicesError.style.display = 'none';
+
+    }catch(err){
+      console.error(err);
+      errBox.textContent = "Erreur réseau. Réessaie.";
+      errBox.classList.remove('d-none');
+    }finally{
+      setLoading(false);
+    }
+  });
+})();
+</script>
+{% endblock %}

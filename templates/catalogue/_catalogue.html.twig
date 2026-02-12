@@ -1,5 +1,5 @@
 {# templates/catalogue/_catalogue.html.twig #}
-{# variables: pageMode, pageTitle, newDays, _cart, _cartCount #}
+{# variables: pageMode, pageTitle, newDays #}
 
 <div class="container-fluid">
 
@@ -68,7 +68,6 @@
   </div>
 </div>
 
-{# Offcanvas filtres (spécifique catalogue) #}
 <div class="offcanvas offcanvas-end" tabindex="-1" id="filtersCanvas">
   <div class="offcanvas-header">
     <h5 class="offcanvas-title"><i class="bi bi-sliders2"></i> Filtres</h5>
@@ -78,8 +77,3 @@
     <div id="filtersClone"></div>
   </div>
 </div>
-
-
-{% block javascripts %}
-
-{% endblock %}

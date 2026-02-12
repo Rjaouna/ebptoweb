@@ -4,7 +4,7 @@
 
 {% block body %}
   {% include 'catalogue/_catalogue.html.twig' with {
-    pageMode: 'new',
+    pageMode: 'all',
     pageTitle: 'Nouveautés',
     newDays: newDays|default(5)
   } %}
@@ -13,17 +13,19 @@
 {% block javascripts %}
   {{ parent() }}
 
+  {# ✅ csvUrl DOIT venir du controller (ex: /catalogue/csv/new?days=5&field=exportstartedat) #}
   <script>
     window.CATALOG_CONFIG = {
-      csvUrl: "{{ path('catalogue_csv') }}",
-      imagesBase: "https://catalogue.3skpartsauto.com/export_images",
-      pageMode: "new",
+      csvUrl: "{{ csvUrl|e('js') }}",
+      imagesBase: "{{ imagesBase|e('js') }}",
+      pageMode: "all",            // ✅ IMPORTANT : pas "new"
       newDays: {{ newDays|default(5) }},
       locale: "fr-FR",
       currency: "MAD"
     };
+    console.log("CATALOG_CONFIG (new)", window.CATALOG_CONFIG);
   </script>
 
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  {# ⚠️ si PapaParse est déjà dans base.html.twig, ne le remets pas ici #}
   <script src="{{ asset('js/catalogue.js') }}"></script>
 {% endblock %}

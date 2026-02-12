@@ -1,0 +1,181 @@
+{# =========================
+   SECTION PROMESSE / STATS (NEW)
+   Bootstrap Icons
+   ========================= #}
+
+<style>
+  .stats2{
+    border-radius: 28px;
+    overflow: hidden;
+    border: 1px solid rgba(15,23,42,.07);
+    background:
+      radial-gradient(900px 420px at 15% 0%, rgba(var(--bs-primary-rgb), .12), transparent 55%),
+      radial-gradient(700px 380px at 85% 100%, rgba(var(--bs-primary-rgb), .08), transparent 60%),
+      #fff;
+    box-shadow: 0 18px 55px rgba(2,6,23,.08);
+  }
+
+  .stats2-head{
+    padding: clamp(1.1rem, 2.4vw, 2.0rem);
+    text-align: center;
+  }
+  .stats2-kicker{
+    display:inline-flex;
+    align-items:center;
+    gap:.55rem;
+    padding:.38rem .7rem;
+    border-radius:999px;
+    font-weight:800;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    font-size:.78rem;
+    color: var(--bs-primary);
+    background: rgba(var(--bs-primary-rgb), .10);
+    border: 1px solid rgba(var(--bs-primary-rgb), .16);
+  }
+  .stats2-title{
+    margin: .85rem 0 .45rem;
+    font-weight: 900;
+    letter-spacing: -.03em;
+    font-size: clamp(1.5rem, 2.6vw, 2.2rem);
+    line-height: 1.15;
+  }
+  .stats2-sub{
+    margin: 0 auto;
+    max-width: 70ch;
+    color: #6c757d;
+    font-size: 1.03rem;
+    line-height: 1.65;
+  }
+
+  .stats2-body{
+    padding: 0 clamp(1.1rem, 2.4vw, 2.0rem) clamp(1.1rem, 2.4vw, 2.0rem);
+  }
+
+  .stats2-grid{
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: clamp(.75rem, 1.6vw, 1.1rem);
+    margin-top: clamp(.9rem, 1.7vw, 1.2rem);
+  }
+
+  .stat2{
+    position: relative;
+    border-radius: 22px;
+    padding: 1.15rem 1.1rem;
+    background: rgba(255,255,255,.88);
+    border: 1px solid rgba(15,23,42,.08);
+    box-shadow: 0 10px 28px rgba(2,6,23,.06);
+    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+    overflow:hidden;
+    height: 100%;
+  }
+  .stat2:hover{
+    transform: translateY(-4px);
+    border-color: rgba(var(--bs-primary-rgb), .28);
+    box-shadow: 0 18px 45px rgba(2,6,23,.10);
+  }
+
+  .stat2-top{
+    display:flex;
+    align-items:center;
+    justify-content: center;
+    gap:.85rem;
+    margin-bottom: .6rem;
+  }
+
+  .stat2-icon{
+    width: 54px; height: 54px;
+    border-radius: 16px;
+    display:grid;
+    place-items:center;
+    background: rgba(var(--bs-primary-rgb), .12);
+    border: 1px solid rgba(var(--bs-primary-rgb), .18);
+    color: var(--bs-primary);
+    font-size: 1.45rem;
+    transition: all .18s ease;
+  }
+
+  .stat2-kpi{
+    font-weight: 950;
+    letter-spacing: -.03em;
+    font-size: 1.65rem;
+    line-height: 1.05;
+    margin: 0;
+    color: #0b1220;
+  }
+  .stat2-label{
+    margin: .2rem 0 0;
+    color: #6c757d;
+    font-weight: 700;
+    line-height: 1.35;
+  }
+
+  /* glow discret */
+  .stat2::after{
+    content:"";
+    position:absolute;
+    inset:-60px -80px auto auto;
+    width: 220px; height: 220px;
+    background: radial-gradient(circle, rgba(var(--bs-primary-rgb), .18), rgba(255,255,255,0) 70%);
+    transform: translate(35px,-35px);
+    opacity: .0;
+    transition: opacity .18s ease;
+    pointer-events:none;
+  }
+  .stat2:hover::after{ opacity: 1; }
+
+  /* responsive */
+  @media (max-width: 991.98px){
+    .stats2-grid{ grid-template-columns: 1fr; }
+    .stat2-top{ justify-content:flex-start; }
+  }
+</style>
+
+<section class="container px-3 px-lg-4 my-4">
+  <div class="stats2">
+    <div class="stats2-head">
+      <span class="stats2-kicker"><i class="bi bi-stars"></i> Notre promesse</span>
+      <h2 class="stats2-title">Rapide, fiable, orienté qualité</h2>
+      <p class="stats2-sub">
+        Disponibilité, accompagnement et expertise : tout est pensé pour vous servir vite et bien.
+      </p>
+    </div>
+
+    <div class="stats2-body">
+      <div class="stats2-grid">
+
+        <div class="stat2">
+          <div class="stat2-top">
+            <div class="stat2-icon"><i class="bi bi-box-seam"></i></div>
+            <div>
+              <p class="stat2-kpi">60 000+</p>
+              <p class="stat2-label">Pièces disponibles en stock</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="stat2">
+          <div class="stat2-top">
+            <div class="stat2-icon"><i class="bi bi-hand-thumbs-up"></i></div>
+            <div>
+              <p class="stat2-kpi">Satisfaction</p>
+              <p class="stat2-label">La clé de notre réussite au quotidien</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="stat2">
+          <div class="stat2-top">
+            <div class="stat2-icon"><i class="bi bi-tools"></i></div>
+            <div>
+              <p class="stat2-kpi">Expérience</p>
+              <p class="stat2-label">Personnel formé & expérimenté</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>

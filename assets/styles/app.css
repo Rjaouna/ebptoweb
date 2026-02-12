@@ -278,10 +278,6 @@ body{
   border-radius: 14px;
   display: grid;
   place-items: center;
-  background: rgba(255,255,255,.9);
-  border: 1px solid rgba(15,23,42,.10);
-  box-shadow: 0 12px 26px rgba(2,6,23,.14);
-  overflow: hidden;
 }
 
 .brand-logo img{
@@ -290,6 +286,21 @@ body{
   object-fit: contain;   /* garde le logo propre */
   display: block;
   padding: 6px;          /* petit “air” autour du logo */
+}
+/* Centre le menu desktop au milieu de la navbar */
+.app-center-nav{
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+}
+
+/* Pour que logo + actions restent au-dessus si ça se chevauche */
+.navbar-brand,
+.ms-auto{
+  position: relative;
+  z-index: 2;
 }
 
 

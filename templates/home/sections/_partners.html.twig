@@ -1,0 +1,197 @@
+{# =========================
+   SECTION PARTENAIRES / MARQUES
+   Images: public/img/partners/*.png|jpg|webp
+   ========================= #}
+
+<style>
+  .partners-section{
+    border: 1px solid rgba(15,23,42,.08);
+    border-radius: 22px;
+    background: #fff;
+    overflow: hidden;
+  }
+  .partners-head{
+    padding: clamp(1rem, 2vw, 1.6rem);
+    border-bottom: 1px solid rgba(15,23,42,.06);
+  }
+  .partners-title{
+    font-weight: 900;
+    letter-spacing: -.02em;
+    margin: 0;
+    font-size: clamp(1.3rem, 2.2vw, 1.9rem);
+  }
+  .partners-sub{
+    margin: .35rem 0 0;
+    color: #6c757d;
+    max-width: 70ch;
+  }
+
+  /* cards logo */
+  .partner-card{
+    height: 120px;
+    border-radius: 18px;
+    border: 1px solid rgba(15,23,42,.08);
+    background: #fff;
+    display: grid;
+    place-items: center;
+    padding: 14px;
+    transition: transform .18s ease, box-shadow .18s ease, opacity .18s ease;
+    opacity: .92;
+  }
+  .partner-card:hover{
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px rgba(2,6,23,.08);
+    opacity: 1;
+  }
+  .partner-logo{
+    max-height: 100px;
+    max-width: 160px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    filter: grayscale(.05);
+  }
+
+  /* Glide */
+  .partners-body{ padding: clamp(1rem, 2vw, 1.6rem); }
+  .glide__slides{ margin: 0; padding: 0; list-style: none; }
+  .glide__slide{ padding: .6rem; }
+
+  .partners-nav{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:.75rem; margin-top: .75rem;
+  }
+  .partners-arrows{
+    display:flex; gap:.5rem;
+  }
+  .partners-arrow{
+    width: 42px; height: 42px;
+    border-radius: 999px;
+    border: 1px solid rgba(15,23,42,.12);
+    background: #fff;
+    display:grid; place-items:center;
+  }
+  .partners-arrow:hover{ background:#f8f9fa; }
+
+  .partners-dots{ display:flex; gap:.35rem; }
+  .partners-dot{
+    width: 10px; height: 10px;
+    border-radius: 999px;
+    border: 0;
+    background: rgba(2,6,23,.18);
+  }
+  .partners-dot.glide__bullet--active{ background: rgba(2,6,23,.55); }
+
+  /* fallback grid */
+  .partners-grid{
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0,1fr));
+    gap: .75rem;
+  }
+  @media (min-width: 576px){
+    .partners-grid{ grid-template-columns: repeat(3, minmax(0,1fr)); }
+  }
+  @media (min-width: 992px){
+    .partners-grid{ grid-template-columns: repeat(6, minmax(0,1fr)); }
+  }
+</style>
+
+{% set partners = [
+  { name: 'Nissan',   file: 'Nissan_logo-1-200x200.png',   url: '#' },
+  { name: 'Euro Bump',file: 'EURO-BUMP-1-200x200.jpg', url: '#' },
+  { name: 'TYC',      file: 'TYC-200x200.png',      url: '#' },
+  { name: 'Misfat',   file: 'misfsat-filtration-logo_1-200x200.png',   url: '#' },
+  { name: 'Ayfar',    file: 'ayfar-logo-200x200.png',    url: '#' },
+  { name: 'Alkar',    file: 'logo-alkar_2x-200x200.png',    url: '#' },
+  { name: '3RG',      file: 'logo-cab-90-200x200.png',      url: '#' },
+] %}
+
+<section class="container px-3 px-lg-4 my-4">
+  <div class="partners-section">
+    <div class="partners-head text-center">
+      <h2 class="partners-title"><strong>Nos</strong> marques</h2>
+      <p class="partners-sub mx-auto">
+        <strong>HOPIC</strong> est là pour répondre à vos besoins : pièces détachées pour la grande majorité des marques et modèles.
+      </p>
+    </div>
+
+    <div class="partners-body">
+      {# ===== Carrousel (Glide.js) ===== #}
+      <div class="glide" id="partnersGlide">
+        <div class="glide__track" data-glide-el="track">
+          <ul class="glide__slides">
+            {% for p in partners %}
+              <li class="glide__slide">
+                <a href="{{ p.url }}" class="text-decoration-none" aria-label="{{ p.name }}">
+                  <div class="partner-card">
+                    <img
+                      class="partner-logo"
+                      src="{{ asset('img/partners/' ~ p.file) }}"
+                      alt="{{ p.name }}"
+                      loading="lazy">
+                  </div>
+                </a>
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+
+        <div class="partners-nav">
+          <div class="partners-arrows" data-glide-el="controls">
+            <button class="partners-arrow" data-glide-dir="<" type="button" aria-label="Précédent">
+              <i class="bi bi-chevron-left"></i>
+            </button>
+            <button class="partners-arrow" data-glide-dir=">" type="button" aria-label="Suivant">
+              <i class="bi bi-chevron-right"></i>
+            </button>
+          </div>
+
+          <div class="partners-dots" data-glide-el="controls[nav]">
+            {% for p in partners %}
+              <button class="partners-dot" data-glide-dir="={{ loop.index0 }}" type="button" aria-label="Aller au logo {{ loop.index }}"></button>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      {# ===== Fallback grille (si JS désactivé) ===== #}
+      <noscript>
+        <div class="partners-grid mt-3">
+          {% for p in partners %}
+            <a href="{{ p.url }}" class="text-decoration-none" aria-label="{{ p.name }}">
+              <div class="partner-card">
+                <img class="partner-logo" src="{{ asset('img/partners/' ~ p.file) }}" alt="{{ p.name }}" loading="lazy">
+              </div>
+            </a>
+          {% endfor %}
+        </div>
+      </noscript>
+    </div>
+  </div>
+</section>
+
+{# Glide.js (léger) #}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@glidejs/glide@3.6.2/dist/css/glide.core.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@glidejs/glide@3.6.2/dist/glide.min.js"></script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const el = document.getElementById("partnersGlide");
+    if (!el || typeof Glide === "undefined") return;
+
+    new Glide("#partnersGlide", {
+      type: "carousel",
+      autoplay: 3500,
+      hoverpause: true,
+      perView: 7,
+      gap: 0,
+      breakpoints: {
+        1200: { perView: 6 },
+        992:  { perView: 5 },
+        768:  { perView: 4 },
+        576:  { perView: 3 },
+        420:  { perView: 2 }
+      }
+    }).mount();
+  });
+</script>
