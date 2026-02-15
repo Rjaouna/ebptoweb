@@ -1,0 +1,41 @@
+{% extends 'base.html.twig' %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block body %}
+<div class="container px-3 px-lg-4 my-4" style="max-width:900px;">
+  <h1 class="h4 mb-3">{{ title }}</h1>
+
+  {{ form_start(form) }}
+    <div class="row g-3">
+      <div class="col-12">
+        {{ form_row(form.imageFile) }}
+        {% if slide is defined and slide.image %}
+          <div class="mt-2">
+            <img src="{{ asset('img/slides/' ~ slide.image) }}" style="max-width:240px;border-radius:14px;">
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="col-12 col-md-6">{{ form_row(form.title) }}</div>
+      <div class="col-12 col-md-6">{{ form_row(form.enabled) }}</div>
+
+      <div class="col-12">{{ form_row(form.subtitle) }}</div>
+
+      <div class="col-12 col-md-6">{{ form_row(form.primaryLabel) }}</div>
+      <div class="col-12 col-md-6">{{ form_row(form.primaryUrl) }}</div>
+
+      <div class="col-12 col-md-6">{{ form_row(form.secondaryLabel) }}</div>
+      <div class="col-12 col-md-6">{{ form_row(form.secondaryUrl) }}</div>
+
+      <div class="col-12 d-flex gap-2">
+        <button class="btn btn-primary rounded-pill px-4" type="submit">
+          <i class="bi bi-check2 me-2"></i>Enregistrer
+        </button>
+        <a href="{{ path('admin_hero_slide_index') }}" class="btn btn-outline-secondary rounded-pill px-4">
+          Retour
+        </a>
+      </div>
+    </div>
+  {{ form_end(form) }}
+</div>
+{% endblock %}

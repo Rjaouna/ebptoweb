@@ -426,119 +426,241 @@
     if (btnMore) btnMore.classList.toggle("d-none", done || filteredRows.length === 0);
   }
 
+
+
+  function cssEsc(v) {
+  if (window.CSS && typeof CSS.escape === "function") return CSS.escape(String(v));
+  return String(v).replace(/[^a-zA-Z0-9_-]/g, "\\$&");
+}
+
+function getStockInfoByUid(uid) {
+  const r = allRowsByUid.get(uid);
+  const stRaw = r ? getStock(r) : NaN;
+
+  const stock = Number.isFinite(stRaw) ? Math.max(0, Math.floor(stRaw)) : null; // null => stock inconnu
+  const cart = getCartState();
+  const inCart = Math.max(0, Math.floor(toNumber(cart?.[uid]) || 0));
+
+  const remaining = (stock === null) ? Infinity : Math.max(0, stock - inCart);
+
+  return { stock, inCart, remaining };
+}
+
   // -----------------------------
   // Cards
   // -----------------------------
-  function updateCardCartBadges() {
-    const cart = getCartState();
-    document.querySelectorAll("[data-card-badge]").forEach((b) => {
-      const uid = b.getAttribute("data-card-badge");
-      const q = Math.floor(toNumber(cart?.[uid]) || 0);
+function updateCardCartBadges() {
+  const cart = getCartState();
 
-      if (q > 0) {
-        b.classList.remove("d-none");
-        b.innerHTML = `<i class="bi bi-cart-check"></i><span>${q}</span>`;
-      } else {
-        b.classList.add("d-none");
-        b.innerHTML = "";
+  document.querySelectorAll("[data-card-badge]").forEach((b) => {
+    const uid = b.getAttribute("data-card-badge");
+    const q = Math.floor(toNumber(cart?.[uid]) || 0);
+
+    if (q > 0) {
+      b.classList.remove("d-none");
+      b.innerHTML = `<i class="bi bi-cart-check"></i><span>${q}</span>`;
+    } else {
+      b.classList.add("d-none");
+      b.innerHTML = "";
+    }
+  });
+
+  // ✅ met à jour les boutons/qty selon stock restant
+  updateCardStockLocks();
+}
+function updateCardStockLocks() {
+  document.querySelectorAll("[data-cart-form][data-uid]").forEach((form) => {
+    const uid = form.getAttribute("data-uid");
+    if (!uid) return;
+
+    const info = getStockInfoByUid(uid);
+
+    const input = form.querySelector('input[name="qty"]');
+    const btnInc = form.querySelector('[data-action="qty-inc"]');
+    const btnDec = form.querySelector('[data-action="qty-dec"]');
+    const btnSubmit = form.querySelector('button[type="submit"]');
+
+    const card = form.closest(".catalog-card");
+    const stockBadge = card?.querySelector(`[data-stock-badge="${cssEsc(uid)}"]`);
+
+    // badge Dispo/Rupture basé sur stock restant
+    if (stockBadge) {
+      const ok = info.remaining > 0; // Infinity => ok
+      stockBadge.className = `badge rounded-pill ${ok ? "text-bg-success" : "text-bg-danger"}`;
+      stockBadge.textContent = ok ? "Dispo" : "Rupture";
+    }
+
+    if (!input || !btnInc || !btnDec || !btnSubmit) return;
+
+    const canAdd = info.remaining > 0; // Infinity => true
+
+    if (!canAdd) {
+      input.disabled = true;
+      btnInc.disabled = true;
+      btnDec.disabled = true;
+
+      btnSubmit.disabled = true;
+      btnSubmit.classList.remove("btn-primary");
+      btnSubmit.classList.add("btn-secondary");
+      btnSubmit.title = "Rupture de stock";
+      return;
+    }
+
+    // ré-active
+    input.disabled = false;
+    btnSubmit.disabled = false;
+    btnSubmit.classList.remove("btn-secondary");
+    btnSubmit.classList.add("btn-primary");
+    btnSubmit.title = "Ajouter au panier";
+
+    let q = Math.max(1, Math.floor(toNumber(input.value) || 1));
+
+    if (Number.isFinite(info.stock)) {
+      const maxAdd = Math.max(1, info.remaining);
+      input.setAttribute("max", String(maxAdd));
+
+      if (q > maxAdd) {
+        q = maxAdd;
+        input.value = String(q);
+        cardQtyDraft.set(uid, q);
       }
-    });
+
+      btnInc.disabled = q >= maxAdd;
+    } else {
+      input.removeAttribute("max");
+      btnInc.disabled = false;
+    }
+
+    btnDec.disabled = q <= 1;
+  });
+}
+
+
+
+function buildCard(r) {
+  const uid = getUid(r);
+  const ref = getRef(r);
+
+  const cap = field(r, "DesComClear") || "Produit";
+  const brand = field(r, "xx_Marque");
+  const family = field(r, "FamilyName");
+  const veh = field(r, "xx_Vehicule");
+  const year = field(r, "xx_Annee");
+
+  const price = getPrice(r, priceMode);
+  const isNew = isNewRow(r);
+
+  // panier -> quantité déjà dans le panier
+  const cart = getCartState();
+  const inCartQty = uid ? Math.max(0, Math.floor(toNumber(cart?.[uid]) || 0)) : 0;
+
+  // stock + remaining (stock restant)
+  const stockRaw = getStock(r);
+  const stock = Number.isFinite(stockRaw) ? Math.max(0, Math.floor(stockRaw)) : null; // null => inconnu
+  const remaining = (stock === null) ? Infinity : Math.max(0, stock - inCartQty);
+  const stockOk = remaining > 0;
+
+  const controlsDisabled = (!uid || !stockOk) ? "disabled" : "";
+
+  const maxAdd = (stock === null) ? null : Math.max(0, remaining);
+
+  // draft qty (clamp selon stock restant)
+  let draftClamped = Math.max(1, Math.floor(toNumber(cardQtyDraft.get(uid)) || 1));
+  if (Number.isFinite(stock)) {
+    draftClamped = Math.min(draftClamped, Math.max(1, maxAdd || 1));
   }
+  if (uid) cardQtyDraft.set(uid, draftClamped);
 
-  function buildCard(r) {
-    const uid = getUid(r);
-    const ref = getRef(r);
+  const decDisabled = (controlsDisabled || draftClamped <= 1) ? "disabled" : "";
+  const incDisabled =
+    (controlsDisabled || (Number.isFinite(stock) && draftClamped >= Math.max(1, maxAdd)))
+      ? "disabled"
+      : "";
 
-    const cap = field(r, "DesComClear") || "Produit";
-    const brand = field(r, "xx_Marque");
-    const family = field(r, "FamilyName");
-    const veh = field(r, "xx_Vehicule");
-    const year = field(r, "xx_Annee");
+  const imgUrl = getImageUrlByUid(uid);
 
-    const stock = getStock(r);
-    const stockOk = Number.isFinite(stock) && stock > 0;
+  const col = document.createElement("div");
+  col.className = "col-12 col-sm-6 col-xl-3";
 
-    const price = getPrice(r, priceMode);
-    const isNew = isNewRow(r);
+  col.innerHTML = `
+    <div class="catalog-card h-100 p-3">
 
-    const draft = Math.max(1, Math.floor(toNumber(cardQtyDraft.get(uid)) || 1));
-    if (uid) cardQtyDraft.set(uid, draft);
+      <span class="card-cart-pill ${inCartQty > 0 ? "" : "d-none"}" data-card-badge="${escHtml(uid)}">
+        <i class="bi bi-cart-check"></i><span>${inCartQty}</span>
+      </span>
 
-    const cart = getCartState();
-    const inCartQty = uid ? Math.floor(toNumber(cart?.[uid]) || 0) : 0;
-
-    const imgUrl = getImageUrlByUid(uid);
-
-    const col = document.createElement("div");
-    col.className = "col-12 col-sm-6 col-xl-3";
-    const disabled = !uid ? "disabled" : "";
-
-    col.innerHTML = `
-      <div class="catalog-card h-100 p-3">
-
-        <span class="card-cart-pill ${inCartQty > 0 ? "" : "d-none"}" data-card-badge="${escHtml(uid)}">
-          <i class="bi bi-cart-check"></i><span>${inCartQty}</span>
-        </span>
-
-        <div class="thumb ratio ratio-4x3 mb-3">
-          ${imgUrl
-            ? `<img src="${escHtml(imgUrl)}" alt="${escHtml(cap)}" loading="lazy"
-                onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,${encodeURIComponent(
-                  `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="450">
-                     <rect width="100%" height="100%" fill="%23f3f4f6"/>
-                     <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle"
-                       fill="%236b7280" font-family="Arial" font-size="20">Image indisponible</text>
-                   </svg>`
-                )}';">`
-            : `<div class="d-flex align-items-center justify-content-center text-muted small">Photo</div>`
-          }
-        </div>
-
-        <div class="d-flex flex-wrap gap-2 mb-2">
-          ${isNew ? `<span class="badge rounded-pill text-bg-warning"><i class="bi bi-stars me-1"></i>Nouveau</span>` : ``}
-          ${brand ? `<span class="badge rounded-pill badge-soft">${escHtml(brand)}</span>` : ""}
-          ${family ? `<span class="badge rounded-pill badge-family">${escHtml(family)}</span>` : ""}
-          <span class="badge rounded-pill ${stockOk ? "text-bg-success" : "text-bg-danger"}">
-            ${stockOk ? "Dispo" : "Rupture"}
-          </span>
-        </div>
-
-        <div class="fw-semibold fs-6 card-title-trunc">${escHtml(cap)}</div>
-        <div class="mt-2 small text-muted">${escHtml([veh, year].filter(Boolean).join(" • "))}</div>
-
-        <div class="d-flex align-items-center justify-content-between mt-3">
-          <div class="fw-bold text-primary">${Number.isFinite(price) ? escHtml(fmtMoney(price)) : "—"}</div>
-          <div class="small text-muted">${priceMode === "inc" ? "TTC" : "HT"}</div>
-        </div>
-
-        <div class="mt-3 small text-muted">
-          ${ref ? `Référence : <span class="fw-semibold">${escHtml(ref)}</span>` : `<span class="text-danger">Référence manquante</span>`}
-        </div>
-
-        <div class="mt-3">
-          <form class="d-flex align-items-center gap-2" data-cart-form ${disabled}>
-            <input type="hidden" name="id" value="${escHtml(uid)}">
-
-            <div class="input-group input-group-sm" style="width: 140px;">
-              <button class="btn btn-outline-secondary" type="button" data-action="qty-dec" data-uid="${escHtml(uid)}" ${disabled}>
-                <i class="bi bi-dash"></i>
-              </button>
-              <input class="form-control text-center" name="qty" type="number" min="1" value="${draft}"
-                     data-action="qty-input" data-uid="${escHtml(uid)}" ${disabled}>
-              <button class="btn btn-outline-secondary" type="button" data-action="qty-inc" data-uid="${escHtml(uid)}" ${disabled}>
-                <i class="bi bi-plus"></i>
-              </button>
-            </div>
-
-            <button class="btn btn-primary btn-sm flex-fill" type="submit" ${disabled} title="Ajouter au panier">
-              <i class="bi bi-cart-plus"></i>
-            </button>
-          </form>
-        </div>
+      <div class="thumb ratio ratio-4x3 mb-3">
+        ${imgUrl
+          ? `<img src="${escHtml(imgUrl)}" alt="${escHtml(cap)}" loading="lazy"
+              onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,${encodeURIComponent(
+                `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="450">
+                   <rect width="100%" height="100%" fill="%23f3f4f6"/>
+                   <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle"
+                     fill="%236b7280" font-family="Arial" font-size="20">Image indisponible</text>
+                 </svg>`
+              )}';">`
+          : `<div class="d-flex align-items-center justify-content-center text-muted small">Photo</div>`
+        }
       </div>
-    `;
-    return col;
-  }
+
+      <div class="d-flex flex-wrap gap-2 mb-2">
+        ${isNew ? `<span class="badge rounded-pill text-bg-warning"><i class="bi bi-stars me-1"></i>Nouveau</span>` : ``}
+        ${brand ? `<span class="badge rounded-pill badge-soft">${escHtml(brand)}</span>` : ""}
+        ${family ? `<span class="badge rounded-pill badge-family">${escHtml(family)}</span>` : ""}
+
+        <span class="badge rounded-pill ${stockOk ? "text-bg-success" : "text-bg-danger"}"
+              data-stock-badge="${escHtml(uid)}">
+          ${stockOk ? "Dispo" : "Rupture"}
+        </span>
+      </div>
+
+      <div class="fw-semibold fs-6 card-title-trunc">${escHtml(cap)}</div>
+      <div class="mt-2 small text-muted">${escHtml([veh, year].filter(Boolean).join(" • "))}</div>
+
+      <div class="d-flex align-items-center justify-content-between mt-3">
+        <div class="fw-bold text-primary">${Number.isFinite(price) ? escHtml(fmtMoney(price)) : "—"}</div>
+        <div class="small text-muted">${priceMode === "inc" ? "TTC" : "HT"}</div>
+      </div>
+
+      <div class="mt-3 small text-muted">
+        ${ref ? `Référence : <span class="fw-semibold">${escHtml(ref)}</span>` : `<span class="text-danger">Référence manquante</span>`}
+      </div>
+
+      <div class="mt-3">
+        <form class="d-flex align-items-center gap-2" data-cart-form data-uid="${escHtml(uid)}">
+          <input type="hidden" name="id" value="${escHtml(uid)}">
+
+          <div class="input-group input-group-sm" style="width: 140px;">
+            <button class="btn btn-outline-secondary" type="button"
+                    data-action="qty-dec" data-uid="${escHtml(uid)}" ${decDisabled}>
+              <i class="bi bi-dash"></i>
+            </button>
+
+            <input class="form-control text-center"
+                   name="qty" type="number" min="1"
+                   ${Number.isFinite(stock) ? `max="${Math.max(1, maxAdd)}"` : ``}
+                   value="${draftClamped}"
+                   data-action="qty-input" data-uid="${escHtml(uid)}" ${controlsDisabled}>
+
+            <button class="btn btn-outline-secondary" type="button"
+                    data-action="qty-inc" data-uid="${escHtml(uid)}" ${incDisabled}>
+              <i class="bi bi-plus"></i>
+            </button>
+          </div>
+
+          <button class="btn ${stockOk ? "btn-primary" : "btn-secondary"} btn-sm flex-fill"
+                  type="submit" ${controlsDisabled}
+                  title="${stockOk ? "Ajouter au panier" : "Rupture de stock"}">
+            <i class="bi bi-cart-plus"></i>
+          </button>
+        </form>
+      </div>
+    </div>
+  `;
+
+  return col;
+}
+
 
   function renderGrid(rows) {
     if (!grid) return;
@@ -554,64 +676,101 @@
 
   // Qty buttons
   if (grid) {
-    grid.addEventListener("click", (e) => {
-      const btn = e.target.closest("[data-action]");
-      if (!btn) return;
+   grid.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-action]");
+  if (!btn) return;
 
-      const action = btn.getAttribute("data-action");
-      const uid = btn.getAttribute("data-uid");
-      if (!uid) return;
+  const action = btn.getAttribute("data-action");
+  const uid = btn.getAttribute("data-uid");
+  if (!uid) return;
 
-      const form = btn.closest("form");
-      const input = form?.querySelector(`input[name="qty"][data-uid="${uid}"]`);
-      if (!input) return;
+  const form = btn.closest("form");
+  const input = form?.querySelector(`input[name="qty"][data-uid="${uid}"]`);
+  if (!input || input.disabled) return;
 
-      let q = Math.max(1, Math.floor(toNumber(input.value) || 1));
-      if (action === "qty-dec") {
-        q = Math.max(1, q - 1);
-        input.value = String(q);
-        cardQtyDraft.set(uid, q);
-      }
-      if (action === "qty-inc") {
-        q = q + 1;
-        input.value = String(q);
-        cardQtyDraft.set(uid, q);
-      }
-    });
+  let q = Math.max(1, Math.floor(toNumber(input.value) || 1));
 
-    grid.addEventListener("input", debounce((e) => {
-      const inp = e.target.closest("[data-action='qty-input']");
-      if (!inp) return;
-      const uid = inp.getAttribute("data-uid");
-      if (!uid) return;
-      cardQtyDraft.set(uid, Math.max(1, Math.floor(toNumber(inp.value) || 1)));
-    }, 120));
+  if (action === "qty-dec") {
+    q = Math.max(1, q - 1);
+  }
+
+  if (action === "qty-inc") {
+    const info = getStockInfoByUid(uid);
+    const lim = Number.isFinite(info.stock) ? Math.max(1, info.remaining) : Infinity;
+    q = Math.min(q + 1, lim);
+  }
+
+  input.value = String(q);
+  cardQtyDraft.set(uid, q);
+
+  updateCardStockLocks();
+});
+
+
+grid.addEventListener("input", debounce((e) => {
+  const inp = e.target.closest("[data-action='qty-input']");
+  if (!inp) return;
+
+  const uid = inp.getAttribute("data-uid");
+  if (!uid) return;
+
+  const info = getStockInfoByUid(uid);
+  let q = Math.max(1, Math.floor(toNumber(inp.value) || 1));
+
+  if (Number.isFinite(info.stock)) {
+    q = Math.min(q, Math.max(1, info.remaining));
+    inp.value = String(q);
+  }
+
+  cardQtyDraft.set(uid, q);
+  updateCardStockLocks();
+}, 120));
+
 
     // Add to cart -> CartUI (global)
-    grid.addEventListener("submit", async (e) => {
-      const form = e.target.closest("[data-cart-form]");
-      if (!form) return;
-      e.preventDefault();
+grid.addEventListener("submit", async (e) => {
+  const form = e.target.closest("[data-cart-form]");
+  if (!form) return;
+  e.preventDefault();
 
-      const fd = new FormData(form);
-      const uid = String(fd.get("id") || "").trim();
-      const qty = Math.max(1, Math.floor(toNumber(fd.get("qty")) || 1));
-      if (!uid) return;
+  const fd = new FormData(form);
+  const uid = String(fd.get("id") || "").trim();
+  const qty = Math.max(1, Math.floor(toNumber(fd.get("qty")) || 1));
+  if (!uid) return;
 
-      try {
-        if (CartUI && typeof CartUI.add === "function") {
-          await CartUI.add(uid, qty);
-          if (typeof window.showToast === "function") window.showToast(`Ajouté au panier (x${qty})`, "success");
-        } else {
-          console.warn("[catalogue.js] CartUI.add indisponible");
-        }
-      } catch (err) {
-        console.error(err);
-        if (typeof window.showToast === "function") window.showToast("Erreur lors de l'ajout au panier.", "danger");
-      } finally {
-        updateCardCartBadges();
-      }
-    });
+  const info = getStockInfoByUid(uid);
+
+  // stock épuisé
+  if (Number.isFinite(info.stock) && info.remaining <= 0) {
+    if (typeof window.showToast === "function") window.showToast("Stock épuisé.", "warning");
+    updateCardStockLocks();
+    return;
+  }
+
+  // clamp qty au stock restant
+  let qtySafe = qty;
+  if (Number.isFinite(info.stock)) {
+    qtySafe = Math.min(qty, Math.max(1, info.remaining));
+    if (qtySafe !== qty && typeof window.showToast === "function") {
+      window.showToast(`Quantité ajustée au stock disponible (max ${info.remaining}).`, "info");
+    }
+  }
+
+  try {
+    if (CartUI && typeof CartUI.add === "function") {
+      await CartUI.add(uid, qtySafe);
+      if (typeof window.showToast === "function") window.showToast(`Ajouté au panier (x${qtySafe})`, "success");
+    } else {
+      console.warn("[catalogue.js] CartUI.add indisponible");
+    }
+  } catch (err) {
+    console.error(err);
+    if (typeof window.showToast === "function") window.showToast("Erreur lors de l'ajout au panier.", "danger");
+  } finally {
+    updateCardCartBadges(); // appelle updateCardStockLocks()
+  }
+});
+
   }
 
   // -----------------------------

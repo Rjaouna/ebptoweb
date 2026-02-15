@@ -16,11 +16,11 @@ class CatalogueController extends AbstractController
      * ✅ Domaine images (tu peux changer)
      * IMPORTANT: pas de "/" à la fin
      */
-    private string $catalogueDomain = 'https://catalogue.3skpartsauto.com';
+    private string $catalogueDomain = 'https://hopic.ma/';
 
     private function buildImagesBase(): string
     {
-        return rtrim($this->catalogueDomain, '/') . '/export_images';
+        return rtrim($this->catalogueDomain, '/') . '/downloads/Update_website/SITEWEB/export_images/';
     }
 
     /**

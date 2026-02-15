@@ -20,15 +20,14 @@
     justify-content: center;
     align-items: center;
     padding: var(--pad);
-    /* pas de background demandé -> rien ici */
   }
 
   /* Image: original size, responsive */
   .hero-img{
-    width: 100%;             /* <= taille naturelle */
-    height: auto;            /* <= taille naturelle */
-    max-width: 100%;         /* responsive */
-    max-height: 520px;       /* évite que ça prenne trop de place */
+    width: 100%;
+    height: auto;
+    max-width: 100%;
+    max-height: 520px;
     display: block;
   }
 
@@ -38,7 +37,6 @@
     position:absolute;
     inset: var(--pad);
     border-radius: 14px;
-  
     pointer-events:none;
   }
 
@@ -51,10 +49,10 @@
     align-items:flex-end;
     padding: clamp(12px, 2vw, 22px);
     z-index: 2;
-    pointer-events:none; /* on réactive uniquement sur les boutons */
+    pointer-events:none;
   }
 
-.hero-card {
+  .hero-card {
     pointer-events: auto;
     max-width: 760px;
     color: #fff;
@@ -65,7 +63,7 @@
     border-radius: 18px;
     padding: 16px 18px;
     box-shadow: 0 18px 55px rgba(0, 0, 0, .20);
-}
+  }
 
   .hero-kicker{
     display:inline-flex;
@@ -125,73 +123,174 @@
     .hero-text{ font-size: .95rem; }
     .hero-card{ padding: 14px 14px; }
   }
+
+  /* Admin actions */
+  .hero-admin-actions{
+    position:absolute;
+    top: calc(var(--pad) + 10px);
+    right: calc(var(--pad) + 10px);
+    z-index: 3;
+    display:flex;
+    gap:.5rem;
+    pointer-events:auto;
+  }
+  .hero-admin-actions .btn{
+    border-radius: 999px;
+    padding: .45rem .6rem;
+    line-height: 1;
+  }
 </style>
 
 <section class="container px-3 px-lg-4 my-3">
-  <div id="heroCarousel" class="carousel slide hero-carousel" data-bs-ride="carousel" data-bs-interval="6500">
-    <div class="carousel-indicators">
-      <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="0"
-              class="active" aria-current="true" aria-label="Slide 1"></button>
-      <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="1"
-              aria-label="Slide 2"></button>
-    </div>
+  {% if slides is defined and slides|length > 0 %}
+    <div id="heroCarousel" class="carousel slide hero-carousel" data-bs-ride="carousel" data-bs-interval="6500">
 
-    <div class="carousel-inner">
+      {# Indicators dynamiques #}
+      <div class="carousel-indicators">
+        {% for s in slides %}
+          <button type="button"
+                  data-bs-target="#heroCarousel"
+                  data-bs-slide-to="{{ loop.index0 }}"
+                  class="{{ loop.first ? 'active' : '' }}"
+                  {{ loop.first ? 'aria-current="true"' : '' }}
+                  aria-label="Slide {{ loop.index }}"></button>
+        {% endfor %}
+      </div>
 
-      {# Slide 1 #}
-      <div class="carousel-item active">
-        <div class="hero-slide">
-          {# ✅ garde tes liens #}
-          <img src="{{ asset('img/slide1.jpg') }}" class="hero-img" alt="Pièces auto - Catalogue">
+      <div class="carousel-inner">
 
-          <div class="hero-overlay">
-            <div class="hero-card">
-         
-            
-              <div class="d-flex gap-2 flex-wrap">
-                <a href="{{ path('catalogue_index') }}" class="btn btn-primary">
-                  <i class="bi bi-grid-3x3-gap me-2"></i>Voir le catalogue
-                </a>
-                <a href="{{ path('catalogue_new') }}" class="btn btn-glass">
-                  <i class="bi bi-stars me-2"></i>Nouveautés
-                </a>
+        {% for s in slides %}
+          <div class="carousel-item {{ loop.first ? 'active' : '' }}">
+            <div class="hero-slide">
+
+              {# =========================
+                 IMAGE
+                 Option A: si tu stockes un chemin complet relatif dans imagePath:
+                 ========================= #}
+              {# <img src="{{ asset(s.imagePath) }}" class="hero-img" alt="{{ s.altText|default('Slide') }}"> #}
+
+              {# =========================
+                 Option B: si tu stockes juste le nom de fichier dans imageName (ex: slide1.jpg):
+                 et tu les mets dans public/img/slides/
+                 ========================= #}
+              <img src="{{ asset('img/slides/' ~ s.image) }}"
+                   class="hero-img"
+                   alt="{{ s.altText|default(s.title|default('Slide')) }}"
+                   loading="lazy">
+
+              {# ✅ Actions admin (edit / delete / mise en avant) #}
+             {% if is_granted('ROLE_ADMIN') %}
+  <div class="hero-admin-actions">
+
+    {# ✅ Mise en avant => bump #}
+    <form method="post" action="{{ path('admin_hero_slide_bump', {id: s.id}) }}" class="d-inline">
+      <input type="hidden" name="_token" value="{{ csrf_token('bump_slide_' ~ s.id) }}">
+      <button class="btn btn-warning btn-sm" type="submit" title="Mettre en avant">
+        <i class="bi bi-pin-angle-fill"></i>
+      </button>
+    </form>
+
+    <a class="btn btn-light btn-sm"
+       href="{{ path('admin_hero_slide_edit', {id: s.id}) }}"
+       title="Modifier">
+      <i class="bi bi-pencil-square"></i>
+    </a>
+
+    {# ✅ Delete #}
+    <form method="post"
+          action="{{ path('admin_hero_slide_delete', {id: s.id}) }}"
+          class="d-inline"
+          onsubmit="return confirm('Supprimer ce slide ?');">
+      <input type="hidden" name="_token" value="{{ csrf_token('delete_slide_' ~ s.id) }}">
+      <button class="btn btn-danger btn-sm" type="submit" title="Supprimer">
+        <i class="bi bi-trash"></i>
+      </button>
+    </form>
+
+  </div>
+{% endif %}
+
+
+              {# Overlay texte + boutons (tu peux remplir via champs DB) #}
+              <div class="hero-overlay">
+                <div class="hero-card">
+
+                  {# Si tu veux: kicker/titre/texte venant de la DB #}
+                  {% if s.kicker is defined and s.kicker %}
+                    <div class="hero-kicker">
+                      <i class="bi bi-lightning-charge-fill"></i> {{ s.kicker }}
+                    </div>
+                  {% endif %}
+
+                  {% if s.title is defined and s.title %}
+                    <h2 class="hero-title">{{ s.title }}</h2>
+                  {% endif %}
+
+                  {% if s.subtitle is defined and s.subtitle %}
+                    <p class="hero-text">{{ s.subtitle }}</p>
+                  {% endif %}
+
+                 {# =========================
+   Boutons du slide (fallback si vide)
+   Champs attendus: primaryLabel, primaryUrl, secondaryLabel, secondaryUrl
+   ========================= #}
+
+{% set pLabel = (s.primaryLabel is defined and s.primaryLabel|trim != '') ? s.primaryLabel : 'Voir le catalogue' %}
+{% set pUrl   = (s.primaryUrl   is defined and s.primaryUrl|trim   != '') ? s.primaryUrl   : path('catalogue_index') %}
+
+{% set sLabel = (s.secondaryLabel is defined and s.secondaryLabel|trim != '') ? s.secondaryLabel : 'Nouveautés' %}
+{% set sUrl   = (s.secondaryUrl   is defined and s.secondaryUrl|trim   != '') ? s.secondaryUrl   : path('catalogue_new') %}
+
+<div class="d-flex gap-2 flex-wrap">
+  <a href="{{ pUrl }}" class="btn btn-primary">
+    <i class="bi bi-grid-3x3-gap me-2"></i>{{ pLabel }}
+  </a>
+
+  <a href="{{ sUrl }}" class="btn btn-glass">
+    <i class="bi bi-stars me-2"></i>{{ sLabel }}
+  </a>
+</div>
+
+
+                </div>
               </div>
+
             </div>
           </div>
+        {% endfor %}
 
-        </div>
       </div>
 
-      {# Slide 2 #}
-      <div class="carousel-item">
-        <div class="hero-slide">
-          {# ✅ garde tes liens #}
-          <img src="{{ asset('img/slide2.jpg') }}" class="hero-img" alt="Pièces auto - Stock & livraison">
-
-          <div class="hero-overlay">
-            <div class="hero-card">
-          <div class="d-flex gap-2 flex-wrap">
-                <a href="{{ path('catalogue_index') }}" class="btn btn-primary">
-                  <i class="bi bi-grid-3x3-gap me-2"></i>Voir le catalogue
-                </a>
-                <a href="{{ path('catalogue_new') }}" class="btn btn-glass">
-                  <i class="bi bi-stars me-2"></i>Nouveautés
-                </a>
-              </div>
-            </div>
-
-        </div>
-      </div>
-
+      <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Previous</span>
+      </button>
+      <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
+        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Next</span>
+      </button>
     </div>
 
-    <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
-      <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-      <span class="visually-hidden">Previous</span>
-    </button>
-    <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
-      <span class="carousel-control-next-icon" aria-hidden="true"></span>
-      <span class="visually-hidden">Next</span>
-    </button>
-  </div>
+    {# Bouton ajouter (uniquement admin) #}
+    {% if is_granted('ROLE_ADMIN') %}
+      <div class="d-flex justify-content-end mt-2">
+        <a href="{{ path('admin_hero_slide_new') }}" class="btn btn-outline-primary rounded-pill px-3">
+          <i class="bi bi-plus-circle me-2"></i>Ajouter un slide
+        </a>
+      </div>
+    {% endif %}
+
+  {% else %}
+    {# Aucun slide #}
+    <div class="alert alert-light border">
+      <div class="fw-bold">Aucun slide</div>
+      {% if is_granted('ROLE_ADMIN') %}
+        <div class="mt-2">
+          <a href="{{ path('admin_hero_slide_new') }}" class="btn btn-primary rounded-pill">
+            <i class="bi bi-plus-circle me-2"></i>Ajouter le premier slide
+          </a>
+        </div>
+      {% endif %}
+    </div>
+  {% endif %}
 </section>
