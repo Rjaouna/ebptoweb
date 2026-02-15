@@ -13,6 +13,11 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Routing\Attribute\Route;
+use App\Repository\OrderRepository;
+use Symfony\Component\HttpFoundation\Request;
+use App\Repository\CommandeRepository;
+use App\Repository\CommandeLigneRepository;
+use Symfony\Component\HttpFoundation\Response;
 
 final class OrderController extends AbstractController
 {
@@ -22,6 +27,95 @@ final class OrderController extends AbstractController
         #[Autowire('%catalogue_cache_csv%')]
         private string $catalogueCacheCsv,
     ) {}
+
+    #[Route('/mes-commandes', name: 'orders_index', methods: ['GET'])]
+    public function index(): Response
+    {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+
+        return $this->render('orders/index.html.twig');
+    }
+
+    #[Route('/ajax/mes-commandes', name: 'ajax_my_orders', methods: ['GET'])]
+public function ajaxMyOrders(Request $request, CommandeRepository $repo): JsonResponse
+{
+    $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+
+    $user = $this->getUser();
+
+    $page = max(1, (int) $request->query->get('page', 1));
+    $limit = min(50, max(2, (int) $request->query->get('limit', 10)));
+    $offset = ($page - 1) * $limit;
+
+    $status = trim((string) $request->query->get('status', ''));
+    $q = trim((string) $request->query->get('q', ''));
+
+    $total = $repo->countForUser($user, $status, $q);
+    $rows  = $repo->findForUser($user, $limit, $offset, $status, $q);
+
+    $orders = [];
+    foreach ($rows as $o) {
+
+        // ✅ itemsCount robuste (selon ton mapping)
+        $itemsCount = null;
+        if (method_exists($o, 'getLignes')) {
+            $itemsCount = $o->getLignes()?->count();
+        } elseif (method_exists($o, 'getCommandeLignes')) {
+            $itemsCount = $o->getCommandeLignes()?->count();
+        }
+
+        $orders[] = [
+    'id' => $o->getId(),
+    'reference' => method_exists($o, 'getReference') ? $o->getReference() : ('CMD-' . $o->getId()),
+    'createdAt' => method_exists($o, 'getCreatedAt') && $o->getCreatedAt()
+        ? $o->getCreatedAt()->format('d/m/Y H:i')
+        : null,
+    'status' => method_exists($o, 'getStatus') ? (string) $o->getStatus() : null,
+    'totalTtc' => method_exists($o, 'getTotalTtc') ? (float) $o->getTotalTtc() : null,
+    'itemsCount' => method_exists($o, 'getItems') ? $o->getItems()->count() : null,
+
+    // ✅ lien détail
+    'showUrl' => $this->generateUrl('orders_show', ['id' => $o->getId()]),
+];
+
+    }
+
+    return $this->json([
+        'ok' => true,
+        'page' => $page,
+        'limit' => $limit,
+        'total' => $total,
+        'pages' => (int) ceil($total / $limit),
+        'orders' => $orders,
+    ]);
+}
+#[Route('/mes-commandes/{id}', name: 'orders_show', methods: ['GET'], requirements: ['id' => '\d+'])]
+public function show(
+    int $id,
+    OrderRepository $repo,
+    CommandeLigneRepository $ligneRepo
+): Response {
+    $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+    $user = $this->getUser();
+
+    /** @var Commande|null $order */
+    $order = $repo->findOneBy(['id' => $id, 'user' => $user]);
+    if (!$order) {
+        throw $this->createNotFoundException('Commande introuvable.');
+    }
+
+    // ✅ Charge lignes directement (indépendant du mapping OneToMany)
+    $lignes = $ligneRepo->findBy(
+        ['commande' => $order],
+        ['id' => 'ASC']
+    );
+
+    return $this->render('orders/show.html.twig', [
+        'order' => $order,
+        'lignes' => $lignes,
+    ]);
+}
+
 
     #[Route('/order/confirm', name: 'order_confirm', methods: ['POST'])]
     public function confirm(CartService $cart): JsonResponse

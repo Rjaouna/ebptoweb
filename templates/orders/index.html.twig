@@ -1,0 +1,365 @@
+{# templates/orders/index.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}Mes commandes{% endblock %}
+
+{% block body %}
+<div class="container py-4">
+
+  <div class="d-flex flex-wrap align-items-end justify-content-between gap-3 mb-3">
+    <div class="min-w-0">
+      <div class="d-flex align-items-center gap-2">
+        <div class="orders-icon">
+          <i class="bi bi-receipt"></i>
+        </div>
+        <div class="min-w-0">
+          <h1 class="h4 mb-1 fw-black text-truncate">Mes commandes</h1>
+          <div class="text-muted small text-truncate">Historique, statut et total. Recherche instantanée.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <a href="{{ path('catalogue_index') }}" class="btn btn-outline-secondary rounded-pill">
+        <i class="bi bi-grid-3x3-gap me-2"></i>Catalogue
+      </a>
+      <button class="btn btn-primary rounded-pill" id="btnOrdersRefresh" type="button">
+        <i class="bi bi-arrow-repeat me-2"></i>Actualiser
+      </button>
+    </div>
+  </div>
+
+  {# Filters #}
+  <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-3 orders-card">
+    <div class="card-body p-3 p-lg-4">
+      <div class="row g-2 align-items-center">
+        <div class="col-12 col-lg-5">
+          <div class="input-group">
+            <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+            <input class="form-control" id="ordersQ" placeholder="Rechercher par référence… (ex: CMD-2026…)" autocomplete="off">
+          </div>
+        </div>
+
+        <div class="col-12 col-lg-3">
+          <select class="form-select" id="ordersStatus">
+            <option value="">Tous les statuts</option>
+            <option value="pending">En attente</option>
+            <option value="confirmed">Confirmée</option>
+            <option value="shipped">Expédiée</option>
+            <option value="cancelled">Annulée</option>
+          </select>
+        </div>
+
+        <div class="col-12 col-lg-2">
+          <select class="form-select" id="ordersLimit">
+            <option value="10">10 / page</option>
+            <option value="20">20 / page</option>
+            <option value="30">30 / page</option>
+          </select>
+        </div>
+
+        <div class="col-12 col-lg-2">
+          <div class="d-flex justify-content-lg-end gap-2">
+            <span class="badge rounded-pill bg-primary-subtle text-primary-emphasis border border-primary-subtle px-3 py-2"
+                  id="ordersCountBadge">—</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="small text-muted mt-2" id="ordersHint"></div>
+    </div>
+  </div>
+
+  {# States #}
+  <div id="ordersLoading" class="d-none">
+    <div class="orders-skel mb-2"></div>
+    <div class="orders-skel mb-2"></div>
+    <div class="orders-skel mb-2"></div>
+  </div>
+
+  <div id="ordersEmpty" class="alert alert-light border rounded-4 d-none">
+    <div class="d-flex gap-2 align-items-start">
+      <i class="bi bi-inbox text-secondary mt-1"></i>
+      <div>
+        <div class="fw-semibold">Aucune commande</div>
+        <div class="small text-muted">Tes commandes validées apparaîtront ici.</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="ordersError" class="alert alert-danger rounded-4 d-none">
+    <div class="d-flex gap-2 align-items-start">
+      <i class="bi bi-exclamation-triangle-fill mt-1"></i>
+      <div>
+        <div class="fw-semibold">Erreur</div>
+        <div class="small" id="ordersErrorMsg">Impossible de charger les commandes.</div>
+      </div>
+    </div>
+  </div>
+
+  {# List #}
+  <div id="ordersList" class="d-grid gap-2"></div>
+
+  {# Pagination #}
+  <div class="d-flex align-items-center justify-content-between gap-3 mt-3">
+    <button class="btn btn-outline-secondary rounded-pill" id="ordersPrev" type="button" disabled>
+      <i class="bi bi-chevron-left me-2"></i>Précédent
+    </button>
+
+    <div class="text-muted small" id="ordersPagerInfo">—</div>
+
+    <button class="btn btn-outline-secondary rounded-pill" id="ordersNext" type="button" disabled>
+      Suivant<i class="bi bi-chevron-right ms-2"></i>
+    </button>
+  </div>
+
+</div>
+
+<script>
+  window.ORDERS_PAGE = {
+    endpoint: "{{ path('ajax_my_orders') }}"
+  };
+</script>
+
+<style>
+  .fw-black{ font-weight:800; }
+
+  .orders-icon{
+    width:44px; height:44px; border-radius:14px;
+    display:grid; place-items:center;
+    background: rgba(13,110,253,.12);
+    border: 1px solid rgba(13,110,253,.18);
+    color: rgba(13,110,253,1);
+    flex: 0 0 auto;
+  }
+  .orders-card{
+    background: linear-gradient(180deg, rgba(13,110,253,.06), rgba(255,255,255,0));
+  }
+
+  .order-row{
+    border: 1px solid rgba(0,0,0,.06);
+    background: #fff;
+    border-radius: 18px;
+    padding: 14px 14px;
+    transition: transform .12s ease, box-shadow .12s ease;
+  }
+  .order-row:hover{
+    transform: translateY(-1px);
+    box-shadow: 0 .4rem 1rem rgba(0,0,0,.06);
+  }
+  .order-ref{ font-weight: 900; }
+  .order-meta{ color:#6c757d; font-size:.86rem; }
+  .order-amount{ font-weight: 900; }
+  .order-status{
+    font-size: .75rem;
+    border-radius: 999px;
+    padding: .25rem .55rem;
+    border: 1px solid rgba(0,0,0,.08);
+    background: rgba(108,117,125,.08);
+    color: #495057;
+    white-space: nowrap;
+  }
+
+  .orders-skel{
+    height: 76px;
+    border-radius: 18px;
+    background: linear-gradient(90deg, rgba(0,0,0,.05), rgba(0,0,0,.08), rgba(0,0,0,.05));
+    background-size: 200% 100%;
+    animation: ordersShimmer 1.2s infinite;
+    border: 1px solid rgba(0,0,0,.06);
+  }
+  @keyframes ordersShimmer{
+    0%{ background-position: 200% 0; }
+    100%{ background-position: -200% 0; }
+  }
+</style>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+(function(){
+  const CFG = window.ORDERS_PAGE || {};
+  const endpoint = CFG.endpoint;
+
+  const listEl = document.getElementById("ordersList");
+  const loadingEl = document.getElementById("ordersLoading");
+  const emptyEl = document.getElementById("ordersEmpty");
+  const errorEl = document.getElementById("ordersError");
+  const errorMsgEl = document.getElementById("ordersErrorMsg");
+  const hintEl = document.getElementById("ordersHint");
+
+  const qEl = document.getElementById("ordersQ");
+  const stEl = document.getElementById("ordersStatus");
+  const limEl = document.getElementById("ordersLimit");
+  const badgeEl = document.getElementById("ordersCountBadge");
+
+  const prevBtn = document.getElementById("ordersPrev");
+  const nextBtn = document.getElementById("ordersNext");
+  const pagerInfo = document.getElementById("ordersPagerInfo");
+  const refreshBtn = document.getElementById("btnOrdersRefresh");
+
+  let page = 1;
+  let pages = 1;
+  let total = 0;
+
+  function esc(s){
+    return String(s ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+  }
+
+  function debounce(fn, ms=250){
+    let t;
+    return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), ms); };
+  }
+
+  function fmtMoney(n){
+    if(!Number.isFinite(n)) return "—";
+    try{
+      const LOCALE = window.CATALOG_CONFIG?.locale || "fr-FR";
+      const CURRENCY = window.CATALOG_CONFIG?.currency || "MAD";
+      return new Intl.NumberFormat(LOCALE,{style:"currency",currency:CURRENCY,maximumFractionDigits:2}).format(n);
+    }catch(e){
+      return n.toFixed(2);
+    }
+  }
+
+  function statusChip(status){
+    const s = String(status||"").trim();
+    if(!s) return "";
+    // tu peux mapper/renommer ici selon tes statuts
+    return `<span class="order-status">${esc(s)}</span>`;
+  }
+
+  function setStateLoading(isLoading){
+    loadingEl?.classList.toggle("d-none", !isLoading);
+  }
+  function setStateEmpty(isEmpty){
+    emptyEl?.classList.toggle("d-none", !isEmpty);
+  }
+  function setStateError(msg){
+    if(!errorEl) return;
+    const show = !!msg;
+    errorEl.classList.toggle("d-none", !show);
+    if(show && errorMsgEl) errorMsgEl.textContent = msg;
+  }
+
+  function updatePager(){
+    if(pagerInfo) pagerInfo.textContent = `Page ${page} / ${pages} • ${total} commande(s)`;
+    if(prevBtn) prevBtn.disabled = page <= 1;
+    if(nextBtn) nextBtn.disabled = page >= pages;
+  }
+
+  function renderList(orders){
+    if(!listEl) return;
+    listEl.innerHTML = "";
+
+    for(const o of orders){
+      const ref = o.reference || ("CMD-" + o.id);
+      const date = o.createdAt || "";
+      const amount = Number.isFinite(o.totalTtc) ? fmtMoney(o.totalTtc) : "—";
+
+      const itemsCount = (o.itemsCount !== null && o.itemsCount !== undefined)
+        ? `<span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle">${o.itemsCount} article(s)</span>`
+        : "";
+
+      const div = document.createElement("div");
+      div.className = "order-row";
+      div.innerHTML = `
+        <div class="d-flex align-items-start justify-content-between gap-3">
+          <div class="min-w-0">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <a class="order-ref text-truncate text-decoration-none" href="${esc(o.showUrl || '#')}"
+   title="Voir le détail">
+  ${esc(ref)}
+</a>
+
+              ${statusChip(o.status)}
+              ${itemsCount}
+            </div>
+            <div class="order-meta mt-1 text-truncate">
+              <i class="bi bi-clock me-1"></i>${esc(date)}
+            </div>
+          </div>
+          <div class="order-amount text-nowrap">${esc(amount)}</div>
+        </div>
+      `;
+      listEl.appendChild(div);
+    }
+  }
+
+  async function load(){
+    if(!endpoint) return;
+
+    setStateError("");
+    setStateEmpty(false);
+    setStateLoading(true);
+    if(listEl) listEl.innerHTML = "";
+
+    const q = (qEl?.value || "").trim();
+    const st = (stEl?.value || "").trim();
+    const limit = parseInt(limEl?.value || "10", 10) || 10;
+
+    if(hintEl){
+      const parts = [];
+      if(q) parts.push(`Recherche: "${q}"`);
+      if(st) parts.push(`Statut: ${st}`);
+      hintEl.textContent = parts.join(" • ");
+    }
+
+    const url = new URL(endpoint, window.location.origin);
+    url.searchParams.set("page", String(page));
+    url.searchParams.set("limit", String(limit));
+    if(q) url.searchParams.set("q", q);
+    if(st) url.searchParams.set("status", st);
+
+    try{
+      const res = await fetch(url.toString(), {
+        method:"GET",
+        credentials:"same-origin",
+        cache:"no-store",
+        headers:{ "Accept":"application/json", "X-Requested-With":"XMLHttpRequest" }
+      });
+
+      const data = await res.json().catch(()=>null);
+      if(!res.ok || !data?.ok){
+        setStateError(data?.message || "Impossible de charger les commandes.");
+        if(badgeEl) badgeEl.textContent = "—";
+        return;
+      }
+
+      total = data.total || 0;
+      pages = Math.max(1, data.pages || 1);
+      page = Math.min(page, pages);
+
+      if(badgeEl) badgeEl.textContent = String(total);
+      updatePager();
+
+      const orders = data.orders || [];
+      if(!orders.length){
+        setStateEmpty(true);
+        renderList([]);
+        return;
+      }
+
+      renderList(orders);
+    }catch(e){
+      setStateError("Erreur réseau.");
+      if(badgeEl) badgeEl.textContent = "—";
+    }finally{
+      setStateLoading(false);
+    }
+  }
+
+  const loadDebounced = debounce(()=>{ page = 1; load(); }, 260);
+
+  qEl?.addEventListener("input", loadDebounced);
+  stEl?.addEventListener("change", ()=>{ page=1; load(); });
+  limEl?.addEventListener("change", ()=>{ page=1; load(); });
+
+  prevBtn?.addEventListener("click", ()=>{ page = Math.max(1, page-1); load(); });
+  nextBtn?.addEventListener("click", ()=>{ page = Math.min(pages, page+1); load(); });
+  refreshBtn?.addEventListener("click", ()=> load());
+
+  document.addEventListener("DOMContentLoaded", ()=> load());
+})();
+</script>
+{% endblock %}

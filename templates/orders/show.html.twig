@@ -1,0 +1,215 @@
+{# templates/orders/show.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}Détails commande{% endblock %}
+
+{% block body %}
+{% set CUR = 'MAD' %}
+
+{# ✅ lignes robustes :
+   - si le controller passe "lignes" => on prend ça
+   - sinon on tente plusieurs getters courants
+#}
+{% set _lignes =
+  (lignes is defined) ? lignes
+  : (order.lignes is defined ? order.lignes
+    : (order.commandeLignes is defined ? order.commandeLignes
+      : (order.items is defined ? order.items : [])
+    )
+  )
+%}
+
+<div class="container py-4">
+
+  {# Header #}
+  <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap mb-3">
+    <div class="min-w-0">
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <a href="{{ path('orders_index') }}" class="btn btn-sm btn-outline-secondary rounded-pill">
+          <i class="bi bi-arrow-left me-1"></i>Retour
+        </a>
+
+        <span class="badge rounded-pill bg-primary-subtle text-primary-emphasis border border-primary-subtle">
+          {{ order.reference ?? ('CMD-' ~ order.id) }}
+        </span>
+
+        {% if order.status %}
+          <span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle">
+            {{ order.status }}
+          </span>
+        {% endif %}
+      </div>
+
+      <div class="text-muted small mt-2">
+        <i class="bi bi-clock me-1"></i>
+        {{ order.createdAt ? order.createdAt|date('d/m/Y H:i') : '—' }}
+        <span class="mx-2">•</span>
+        <i class="bi bi-list-check me-1"></i>{{ _lignes|length }} ligne(s)
+      </div>
+    </div>
+
+    <div class="text-end">
+      <div class="text-muted small">Total TTC</div>
+      <div class="h4 fw-black mb-0">
+        {{ order.totalTtc is not null ? (order.totalTtc|number_format(2, ',', ' ') ~ ' ' ~ CUR) : '—' }}
+      </div>
+      <div class="text-muted small">
+        HT :
+        <span class="fw-semibold">
+          {{ order.totalHt is not null ? (order.totalHt|number_format(2, ',', ' ') ~ ' ' ~ CUR) : '—' }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    {# ✅ Col gauche : lignes #}
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="p-3 p-lg-4"
+             style="background: linear-gradient(180deg, rgba(13,110,253,.08), rgba(255,255,255,0));">
+
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <div class="fw-black">
+              <i class="bi bi-bag-check me-2 text-primary"></i>Articles
+            </div>
+            <div class="text-muted small">
+              {{ _lignes|length }} ligne(s)
+            </div>
+          </div>
+
+          {% if _lignes is empty %}
+            <div class="alert alert-light border rounded-4 mb-0">
+              <i class="bi bi-inbox me-2 text-secondary"></i>Aucun article sur cette commande.
+            </div>
+          {% else %}
+            <div class="d-grid gap-2 mt-3">
+              {% for l in _lignes %}
+                {# champs tolérants (selon tes noms de propriétés) #}
+                {% set uid = l.uid ?? l.Uid ?? '—' %}
+                {% set name = l.name ?? l.designation ?? uid %}
+                {% set qty = l.quantity ?? l.qty ?? 0 %}
+                {% set puTtc = l.unitPriceTtc ?? l.puTtc ?? null %}
+                {% set lineTtc = l.lineTotalTtc ?? l.totalTtc ?? null %}
+                {% set puHt = l.unitPriceHt ?? l.puHt ?? null %}
+                {% set lineHt = l.lineTotalHt ?? l.totalHt ?? null %}
+
+                <div class="order-line p-3 bg-white border rounded-4">
+                  <div class="d-flex align-items-start justify-content-between gap-3">
+                    <div class="min-w-0">
+                     <div class="fw-semibold text-truncate">
+  {{ name|default('')|length > 30 ? name|slice(0, 30) ~ '…' : name }}
+</div>
+
+
+                      <div class="text-muted small mt-1 text-truncate">
+                        UID : {{ uid }}
+                      </div>
+
+                      <div class="d-flex gap-2 flex-wrap mt-2">
+                        <span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle">
+                          Qté : {{ qty }}
+                        </span>
+
+                        <span class="badge rounded-pill bg-primary-subtle text-primary-emphasis border border-primary-subtle">
+                          PU TTC :
+                          {{ puTtc is not null ? (puTtc|number_format(2, ',', ' ') ~ ' ' ~ CUR) : '—' }}
+                        </span>
+
+                        <span class="badge rounded-pill bg-success-subtle text-success-emphasis border border-success-subtle">
+                          Sous-total TTC :
+                          {{ lineTtc is not null ? (lineTtc|number_format(2, ',', ' ') ~ ' ' ~ CUR) : '—' }}
+                        </span>
+                      </div>
+
+                      <div class="text-muted small mt-2">
+                        {% if puHt is not null %}
+                          HT : <span class="fw-semibold">{{ puHt|number_format(2, ',', ' ') ~ ' ' ~ CUR }}</span>
+                        {% endif %}
+                        {% if lineHt is not null %}
+                          <span class="mx-2">•</span>
+                          Total HT : <span class="fw-semibold">{{ lineHt|number_format(2, ',', ' ') ~ ' ' ~ CUR }}</span>
+                        {% endif %}
+                      </div>
+                    </div>
+
+                    <div class="text-end">
+                      <div class="fw-black">
+                        {{ lineTtc is not null ? (lineTtc|number_format(2, ',', ' ') ~ ' ' ~ CUR) : '—' }}
+                      </div>
+                      <div class="text-muted small">TTC</div>
+                    </div>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    {# ✅ Col droite : résumé (gardé) #}
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm rounded-4 sticky-top" style="top: 90px;">
+        <div class="card-body p-3 p-lg-4">
+          <div class="fw-black mb-2">
+            <i class="bi bi-info-circle me-2 text-primary"></i>Détails
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center">
+            <div class="text-muted">Référence</div>
+            <div class="fw-semibold text-end text-truncate" style="max-width: 180px;">
+              {{ order.reference ?? ('CMD-' ~ order.id) }}
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center mt-2">
+            <div class="text-muted">Date</div>
+            <div class="fw-semibold text-end">
+              {{ order.createdAt ? order.createdAt|date('d/m/Y H:i') : '—' }}
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center mt-2">
+            <div class="text-muted">Statut</div>
+            <div class="fw-semibold text-end">
+              {{ order.status ?? '—' }}
+            </div>
+          </div>
+
+          <hr class="my-3">
+
+          <div class="d-flex justify-content-between align-items-center">
+            <div class="text-muted">Articles</div>
+            <div class="fw-black">{{ _lignes|length }}</div>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center mt-2">
+            <div class="text-muted">Total HT</div>
+            <div class="fw-black">
+              {{ order.totalHt is not null ? (order.totalHt|number_format(2, ',', ' ') ~ ' ' ~ CUR) : '—' }}
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center mt-2">
+            <div class="text-muted">Total TTC</div>
+            <div class="fw-black">
+              {{ order.totalTtc is not null ? (order.totalTtc|number_format(2, ',', ' ') ~ ' ' ~ CUR) : '—' }}
+            </div>
+          </div>
+
+          <div class="text-muted small mt-3">
+            Cette page affiche uniquement vos commandes (filtrée par utilisateur).
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .fw-black { font-weight: 800; }
+  .order-line { transition: transform .12s ease, box-shadow .12s ease; }
+  .order-line:hover { transform: translateY(-1px); box-shadow: 0 .4rem 1rem rgba(0,0,0,.06); }
+</style>
+{% endblock %}

@@ -1,0 +1,117 @@
+{# templates/partials/_my_orders_widget.html.twig #}
+{# templates/partials/_my_orders_widget.html.twig #}
+<div id="myOrdersWidget"
+     data-endpoint="{{ path('ajax_my_orders') }}"
+     data-all-url="{{ path('orders_index') }}"
+     data-show-url="{{ path('orders_show', {id: 0}) }}" class="my-5">
+
+
+  <div class="p-3 p-lg-4 rounded" style="background: linear-gradient(180deg, rgba(13,110,253,.10), rgba(255,255,255,0));">
+    <div class="d-flex align-items-start justify-content-between gap-3">
+      <div class="d-flex align-items-center gap-2 min-w-0">
+        <div style="width:42px;height:42px;border-radius:14px;display:grid;place-items:center;
+                    background: rgba(13,110,253,.12); border:1px solid rgba(13,110,253,.18);">
+          <i class="bi bi-receipt text-primary fs-5"></i>
+        </div>
+        <div class="min-w-0">
+          <div class="fw-black text-truncate">Mes commandes</div>
+          <div class="text-muted small text-truncate">Les 2 dernières commandes</div>
+        </div>
+      </div>
+
+      <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" data-action="refresh">
+        <i class="bi bi-arrow-repeat me-1"></i>Actualiser
+      </button>
+    </div>
+
+    <div class="mt-3 d-none" id="myOrdersLoading">
+      <div style="height:60px;border-radius:16px;border:1px solid rgba(0,0,0,.06);
+                  background: linear-gradient(90deg, rgba(0,0,0,.05), rgba(0,0,0,.08), rgba(0,0,0,.05));
+                  background-size:200% 100%; animation: shimmer 1.2s infinite;"></div>
+    </div>
+
+    <div id="myOrdersEmpty" class="alert alert-light border rounded-4 py-2 px-3 mb-0 d-none mt-3">
+      <i class="bi bi-inbox me-2 text-secondary"></i>Aucune commande.
+    </div>
+
+    <div id="myOrdersList" class="d-grid gap-2 mt-3"></div>
+
+    <div class="d-grid mt-3">
+      <a class="btn btn-primary rounded-pill" href="{{ path('orders_index') }}">
+        <i class="bi bi-list-ul me-2"></i>Voir toutes mes commandes
+      </a>
+    </div>
+  </div>
+</div>
+
+<style>
+  .fw-black{ font-weight:800; }
+  @keyframes shimmer{ 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+  .order-mini{
+    background:#fff;
+    border:1px solid rgba(0,0,0,.06);
+    border-radius:16px;
+    padding:12px 12px;
+    transition: transform .12s ease, box-shadow .12s ease;
+  }
+  .order-mini:hover{ transform: translateY(-1px); box-shadow: 0 .35rem 1rem rgba(0,0,0,.06); }
+  .order-chip{
+    font-size:.75rem; border-radius:999px; padding:.25rem .55rem;
+    border:1px solid rgba(0,0,0,.08); background: rgba(108,117,125,.08);
+    color:#495057; white-space:nowrap;
+  }
+</style>
+
+
+{# Styles du widget (tu peux le déplacer dans ton CSS global) #}
+<style>
+  .myorders-card { background: linear-gradient(180deg, rgba(13,110,253,.06), rgba(255,255,255,0)); }
+  .myorders-header { background: rgba(255,255,255,.7); backdrop-filter: blur(6px); }
+  .myorders-icon{
+    width:44px; height:44px; border-radius:14px;
+    display:grid; place-items:center;
+    background: rgba(13,110,253,.12);
+    border: 1px solid rgba(13,110,253,.18);
+    color: rgba(13,110,253,1);
+    flex: 0 0 auto;
+  }
+  .myorders-title { font-size: 1.05rem; letter-spacing: .2px; }
+  .fw-black{ font-weight:800; }
+
+  .myorders-row{
+    border: 1px solid rgba(0,0,0,.06);
+    background: #fff;
+    border-radius: 18px;
+    padding: 12px 14px;
+    transition: transform .12s ease, box-shadow .12s ease;
+  }
+  .myorders-row:hover{
+    transform: translateY(-1px);
+    box-shadow: 0 .4rem 1rem rgba(0,0,0,.06);
+  }
+  .myorders-ref{ font-weight: 800; }
+  .myorders-meta{ color: #6c757d; font-size: .85rem; }
+  .myorders-amount{ font-weight: 800; }
+  .myorders-status{
+    font-size: .75rem;
+    border-radius: 999px;
+    padding: .25rem .55rem;
+    border: 1px solid rgba(0,0,0,.08);
+    background: rgba(108,117,125,.08);
+    color: #495057;
+    white-space: nowrap;
+  }
+
+  .myorders-skel{
+    height: 64px;
+    border-radius: 18px;
+    background: linear-gradient(90deg, rgba(0,0,0,.05), rgba(0,0,0,.08), rgba(0,0,0,.05));
+    background-size: 200% 100%;
+    animation: myordersShimmer 1.2s infinite;
+    border: 1px solid rgba(0,0,0,.06);
+  }
+  @keyframes myordersShimmer{
+    0%{ background-position: 200% 0; }
+    100%{ background-position: -200% 0; }
+  }
+</style>

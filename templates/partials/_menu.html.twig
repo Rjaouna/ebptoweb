@@ -46,6 +46,48 @@
   </a>
 </div>
 
+{% if app.environment == 'dev' and is_granted('IS_AUTHENTICATED_FULLY') %}
+  <button class="btn btn-danger btn-sm rounded-pill" id="btnDevResetDb" type="button">
+    <i class="bi bi-trash3 me-1"></i>Reset DB
+  </button>
+
+  <script>
+    (function () {
+      const btn = document.getElementById("btnDevResetDb");
+      if (!btn) return;
+
+      const endpoint = "{{ path('dev_reset_db') }}";
+
+      btn.addEventListener("click", async () => {
+        if (!confirm("Vider Cart / CartItem / Commande / CommandeLigne / StockReservation ?")) return;
+
+        btn.disabled = true;
+
+        try {
+          const res = await fetch(endpoint, {
+            method: "POST",
+            credentials: "same-origin",
+            headers: { "X-Requested-With": "XMLHttpRequest", "Accept": "application/json" },
+          });
+
+          const data = await res.json().catch(() => null);
+
+          if (!res.ok || !data?.ok) {
+            alert("Erreur reset DB: " + (data?.message || ("HTTP " + res.status)));
+            return;
+          }
+
+          alert("✅ DB vidée !");
+          window.location.reload();
+        } catch (e) {
+          alert("Erreur réseau.");
+        } finally {
+          btn.disabled = false;
+        }
+      });
+    })();
+  </script>
+{% endif %}
 
 
 
