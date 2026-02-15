@@ -1,44 +1,178 @@
 {# templates/home/sections/_footer.html.twig #}
-<footer class="border-top bg-body-tertiary">
-	<div class="container py-4">
-		<div class="row g-3">
-			<div class="col-lg-5">
-				<div class="fw-bold">{{ app_name|default('AutoParts Pro') }}</div>
-				<div class="small text-body-secondary">
-					Catalogue privé • Pièces auto • Livraison & retrait
-				</div>
-			</div>
+<footer class="footer-modern border-top bg-body-tertiary">
+  <div class="container py-5">
 
-			<div class="col-lg-3">
-				<div class="fw-bold mb-2">Liens</div>
-				<div class="vstack gap-1 small">
-					<a href="#catalogue" class="text-decoration-none">Catalogue</a>
-					<a href="#devis" class="text-decoration-none">Devis</a>
-					<a href="#contact" class="text-decoration-none">Contact</a>
-				</div>
-			</div>
+    <div class="row g-4">
 
-			<div class="col-lg-4">
-				<div class="fw-bold mb-2">Espace client</div>
-				<div class="d-flex gap-2 flex-wrap">
-					{% if app.user %}
-						<a class="btn btn-primary btn-sm rounded-pill px-3" href="#">Catalogue</a>
-						<a class="btn btn-outline-secondary btn-sm rounded-pill px-3" href="#">Déconnexion</a>
-					{% else %}
-						<a class="btn btn-outline-secondary btn-sm rounded-pill px-3" href="#">Connexion</a>
-						<a class="btn btn-primary btn-sm rounded-pill px-3" href="#">Créer un compte</a>
-					{% endif %}
-				</div>
-			</div>
-		</div>
+      {# Brand #}
+      <div class="col-lg-5">
+        <div class="d-flex align-items-center gap-3">
+          <div class="footer-logo-wrap">
+            <img src="{{ asset('img/logo.png') }}" alt="Hopic" class="footer-logo">
+          </div>
 
-		<hr class="my-3">
+          
+        </div>
 
-		<div class="small text-body-secondary">
-			©
-			{{ "now"|date("Y") }}
-			— Tous droits réservés
-		</div>
-	</div>
+        <div class="mt-3 text-body-secondary small">
+          Passez vos commandes rapidement, suivez vos commandes et gérez votre panier en toute simplicité.
+        </div>
+
+        <div class="mt-3 d-flex gap-2 flex-wrap">
+          <span class="badge rounded-pill text-bg-light border">
+            <i class="bi bi-lightning-charge me-1"></i>Commande rapide
+          </span>
+          <span class="badge rounded-pill text-bg-light border">
+            <i class="bi bi-truck me-1"></i>Livraison
+          </span>
+          <span class="badge rounded-pill text-bg-light border">
+            <i class="bi bi-shop me-1"></i>Retrait
+          </span>
+        </div>
+      </div>
+
+      {# Quick links (tu as dit que tu aimes bien, je garde) #}
+      <div class="col-lg-3">
+        <div class="fw-black mb-2">Liens rapides</div>
+
+        <div class="vstack gap-2 small">
+          <a href="{{ path('catalogue_index') }}" class="footer-link">
+            <i class="bi bi-grid-3x3-gap me-2"></i>Catalogue
+          </a>
+
+          {% if app.user %}
+            <a href="{{ path('cart_index') }}" class="footer-link">
+              <i class="bi bi-cart3 me-2"></i>Panier
+            </a>
+            <a href="{{ path('orders_index') }}" class="footer-link">
+              <i class="bi bi-receipt me-2"></i>Mes commandes
+            </a>
+          {% endif %}
+
+          <a href="{{path('app_contact')}}" class="footer-link">
+            <i class="bi bi-envelope me-2"></i>Contact
+          </a>
+        </div>
+      </div>
+
+      {# Actions (sans "Espace client", plus sobre) #}
+      <div class="col-lg-4">
+        <div class="fw-black mb-2">Accès & actions</div>
+
+        {% if app.user %}
+          <div class="footer-actions">
+            <div class="small text-body-secondary mb-2 text-truncate">
+              Connecté : <span class="fw-semibold">{{ app.user.email|default('') }}</span>
+            </div>
+
+            <div class="d-flex gap-2 flex-wrap">
+              <a class="btn btn-primary btn-sm rounded-pill px-3" href="{{ path('catalogue_index') }}">
+                <i class="bi bi-bag-check me-2"></i>Passer commande
+              </a>
+              <a class="btn btn-outline-secondary btn-sm rounded-pill px-3" href="{{ path('orders_index') }}">
+                <i class="bi bi-receipt me-2"></i>Commandes
+              </a>
+              <a class="btn btn-outline-secondary btn-sm rounded-pill px-3" href="{{ path('cart_index') }}">
+                <i class="bi bi-cart3 me-2"></i>Panier
+              </a>
+              <a class="btn btn-outline-danger btn-sm rounded-pill px-3" href="{{ path('app_logout') }}">
+                <i class="bi bi-box-arrow-right me-2"></i>Déconnexion
+              </a>
+            </div>
+
+            <div class="footer-tip small text-body-secondary mt-3">
+              Astuce : ajoute tes articles au panier, puis valide en 1 clic.
+            </div>
+          </div>
+
+        {% else %}
+          <div class="footer-actions">
+            <div class="small text-body-secondary mb-3">
+              Connectez-vous pour passer des commandes et suivre vos achats.
+            </div>
+
+            <div class="d-flex gap-2 flex-wrap">
+              <a class="btn btn-primary btn-sm rounded-pill px-3" href="{{ path('app_login') }}">
+                <i class="bi bi-person-check me-2"></i>Connexion
+              </a>
+            
+              <a class="btn btn-outline-secondary btn-sm rounded-pill px-3" href="{{ path('catalogue_index') }}">
+                <i class="bi bi-grid-3x3-gap me-2"></i>Voir le catalogue
+              </a>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+
+    </div>
+
+    <hr class="my-4">
+
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 small text-body-secondary">
+      <div>
+        © {{ "now"|date("Y") }} — {{ app_name|default('Hopic') }} • Tous droits réservés
+      </div>
+
+      <div class="d-flex gap-3">
+        <a class="footer-link-inline" href="#mentions">Mentions légales</a>
+        <a class="footer-link-inline" href="#confidentialite">Confidentialité</a>
+      </div>
+    </div>
+  </div>
 </footer>
 
+<style>
+  .fw-black{ font-weight:800; }
+
+  .footer-modern{ position:relative; }
+  .footer-modern:before{
+    content:"";
+    position:absolute; inset:0 0 auto 0; height:1px;
+    background: linear-gradient(90deg, rgba(13,110,253,.0), rgba(13,110,253,.35), rgba(13,110,253,.0));
+    transform: translateY(-1px);
+  }
+
+  .footer-logo-wrap{
+    width:100px; height:54px; border-radius:18px;
+    display:grid; place-items:center;
+
+    overflow:hidden;
+    flex: 0 0 auto;
+    box-shadow: 0 .25rem .9rem rgba(0,0,0,.05);
+  }
+  .footer-logo{ width:100%; height:100%; object-fit:contain; padding:8px; }
+  .footer-brand{ font-size:1.1rem; letter-spacing:.2px; }
+
+  .footer-link{
+    display:flex; align-items:center;
+    color: rgba(var(--bs-body-color-rgb), .85);
+    text-decoration:none;
+    padding:.4rem .4rem;
+    border-radius:12px;
+    transition: background .12s ease, transform .12s ease, color .12s ease;
+  }
+  .footer-link:hover{
+    background: rgba(0,0,0,.04);
+    transform: translateY(-1px);
+    color: rgba(var(--bs-body-color-rgb), 1);
+  }
+
+  .footer-link-inline{
+    color: rgba(var(--bs-primary-rgb), 1);
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .footer-link-inline:hover{ text-decoration: underline; }
+
+  .footer-actions{
+    border: 1px solid rgba(0,0,0,.06);
+    background: rgba(255,255,255,.65);
+    border-radius: 18px;
+    padding: 14px 14px;
+    box-shadow: 0 .35rem 1rem rgba(0,0,0,.04);
+  }
+  .footer-tip{
+    border-top: 1px dashed rgba(0,0,0,.12);
+    padding-top: 10px;
+  }
+</style>

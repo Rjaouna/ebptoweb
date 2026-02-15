@@ -293,6 +293,7 @@
     const veh = stripQuotes(r.xx_Vehicule || "");
     const stock = toNumber(r.RealStock);
     const price = fmtMoney(r.SalePriceVatIncluded || r.SalePriceVatExcluded);
+    const nameShort = truncate(name, 20);
 
     return `
       <div class="col-6 col-md-4 col-xl-2">
@@ -305,17 +306,13 @@
                  src="${esc(imgUrl(uid))}"
                  alt="${esc(name)}"
                  loading="lazy"
-                 onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,${encodeURIComponent(
-                   `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="450">
-                      <rect width="100%" height="100%" fill="%23f3f4f6"/>
-                      <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle"
-                        fill="%236b7280" font-family="Arial" font-size="20">Image indisponible</text>
-                    </svg>`
-                 )}';">
+              onerror="this.onerror=null;this.src='/img/default.png';"
+
+>
           </div>
 
           <div class="new-body">
-            <h3 class="new-name">${esc(name)}</h3>
+            <h3 class="new-name" title="${esc(name)}">${esc(nameShort)}</h3>
             <div class="new-meta">${esc(marque)}${marque && veh ? " · " : ""}${esc(veh)}</div>
 
             <div class="d-flex justify-content-between align-items-center">
@@ -330,7 +327,10 @@
       </div>
     `;
   }
-
+function truncate(s, max = 20){
+  s = String(s ?? "").trim();
+  return s.length > max ? s.slice(0, max) + "…" : s;
+}
   async function load(){
     try{
       const res = await fetch(CSV_URL, { cache: "no-store", credentials: "same-origin", headers: { "Accept": "text/csv,*/*" } });

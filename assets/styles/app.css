@@ -132,6 +132,9 @@ body{
   box-shadow: 0 0 0 .25rem rgba(var(--bs-primary-rgb), .14);
   background: rgba(255,255,255,.95);
 }
+input#qTop {
+    font-size: 1rem;
+}
 
 /* =========================
    CHIPS
@@ -184,17 +187,28 @@ body{
 /* Thumbnail */
 .thumb{
   border-radius: var(--radius-lg);
-  overflow:hidden;
-  border:1px solid var(--card-border);
-  background: linear-gradient(135deg, var(--brand-soft), rgba(17,24,39,.06));
+  overflow: hidden;
+
+  height: 110px;                 /* ajuste */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  background: #fff;
 }
+
 .thumb img{
-  width:100%;
-  height:100%;
-  object-fit:contain;
-  background:#fff;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
   display:block;
+      top: auto;
+    left: auto;
 }
+
+
 
 /* Badge qty sur carte */
 .card-cart-pill{
@@ -391,7 +405,7 @@ body{
 /* Meta */
 .cartp-meta{ min-width:0; flex:1; }
 .cartp-title{
-  font-weight: 900;
+  font-weight: 600;
   line-height: 1.15;
   color: var(--ink);
 }

@@ -119,16 +119,14 @@
         <div class="d-flex align-items-start justify-content-between gap-3">
           <div class="min-w-0">
             <div class="d-flex align-items-center gap-2 flex-wrap">
-              <div class="fw-black text-truncate">${esc(ref)}</div>
+              <div class="fw-black text-truncate"><a href="${esc(showUrl)}">${esc(ref)}</a></div>
               ${statusChip(o?.status)}
               ${itemsCount}
             </div>
 
             <div class="text-muted small mt-1 d-flex align-items-center gap-2 flex-wrap">
               ${date ? `<span><i class="bi bi-clock me-1"></i>${esc(date)}</span>` : ""}
-              ${showUrl ? `<a class="btn btn-sm btn-outline-primary rounded-pill py-1 px-2" href="${esc(showUrl)}">
-                <i class="bi bi-eye me-1"></i>Détails
-              </a>` : ""}
+            
             </div>
           </div>
 

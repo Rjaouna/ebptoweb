@@ -1,9 +1,11 @@
 {# templates/partials/_topbar.html.twig #}
+{% set route = app.request.attributes.get('_route') %}
+
 <div class="topbar-glass d-none d-lg-block">
   <div class="container-fluid px-3 px-lg-4 py-2">
     <div class="d-flex align-items-center justify-content-between gap-3">
 
-      {# Left: 2 infos #}
+      {# Left: infos #}
       <div class="d-flex align-items-center gap-4 topbar-left">
 
         <div class="d-flex align-items-start gap-2">
@@ -29,13 +31,32 @@
         </div>
 
       </div>
-
-      {# Right: account + socials #}
+  {# Right: socials #}
       <div class="d-flex align-items-center gap-2">
+      {# Center: links (discrets) #}
+      <nav class="topbar-nav d-none d-lg-flex align-items-center gap-3">
+        <a class="topbar-link {{ route == 'app_home' ? 'active' : '' }}"
+           href="{{ path('app_home') }}">
+          Accueil
+        </a>
 
-      
+        <a class="topbar-link {{ route == 'app_who_we_are' ? 'active' : '' }}"
+           href="{{ path('app_who_we_are') }}">
+          Qui sommes-nous
+        </a>
 
+        <a class="topbar-link {{ route == 'app_faq' ? 'active' : '' }}"
+           href="{{ path('app_faq') }}">
+          Faq
+        </a>
 
+        <a class="topbar-link {{ route == 'app_contact' ? 'active' : '' }}"
+           href="{{ path('app_contact') }}">
+          Contact
+        </a>
+      </nav>
+
+    
         <a class="topbar-social" href="#" target="_blank" rel="noopener nofollow" aria-label="Facebook" title="Facebook">
           <i class="bi bi-facebook"></i>
         </a>
@@ -45,22 +66,22 @@
         <a class="topbar-social" href="#" target="_blank" rel="noopener nofollow" aria-label="Google" title="Google">
           <i class="bi bi-google"></i>
         </a>
-
       </div>
+
     </div>
   </div>
 </div>
 
 <style>
   .topbar-glass{
-    background: rgba(255,255,255,.70);
+    background: rgba(255,255,255,.68);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
     border-bottom: 1px solid rgba(15,23,42,.08);
   }
 
   .topbar-muted{
-    color: rgba(15,23,42,.65);
+    color: rgba(15,23,42,.62);
     font-size: .85rem;
   }
 
@@ -88,12 +109,35 @@
     background: rgba(15,23,42,.10);
   }
 
-  .topbar-btn{
-    border-radius: 999px;
-    padding: .35rem .75rem;
-    font-weight: 700;
+  /* --- Nav links discrets --- */
+  .topbar-nav{
+    gap: 1rem;
+    padding: 0 .5rem;
+  }
+  .topbar-link{
+    position: relative;
+    text-decoration: none;
+    font-weight: 400;
+    font-size: .80rem;
+    color: rgba(15,23,42,.72);
+    padding: .2rem .1rem;
+    transition: color .15s ease, opacity .15s ease;
+    white-space: nowrap;
+  }
+  .topbar-link:hover{
+    color: var(--bs-primary);
   }
 
+  /* underline smooth */
+ 
+
+
+  .topbar-link.active{
+    color: var(--bs-primary);
+  }
+
+
+  /* --- Socials --- */
   .topbar-social{
     width: 34px;
     height: 34px;
@@ -105,7 +149,7 @@
     color: var(--bs-secondary);
     border: 1px solid rgba(15,23,42,.12);
     background: rgba(255,255,255,.75);
-    transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+    transition: transform .15s ease, box-shadow .15s ease, background .15s ease, color .15s ease;
   }
   .topbar-social:hover{
     background: rgba(var(--bs-primary-rgb), .10);
@@ -114,21 +158,9 @@
     box-shadow: 0 12px 24px rgba(2,6,23,.10);
   }
 
-  .topbar-user{
-    padding: .35rem .65rem;
-    border-radius: 999px;
-    background: rgba(255,255,255,.65);
-    border: 1px solid rgba(15,23,42,.10);
-  }
-  .topbar-dot{
-    width: 10px;
-    height: 10px;
-    border-radius: 999px;
-    background: #16a34a;
-    box-shadow: 0 0 0 3px rgba(22,163,74,.12);
-  }
-
   @media (max-width: 1200px){
     .topbar-left{ gap: 1.25rem !important; }
+    .topbar-nav{ gap: .85rem; }
+    .topbar-link{ font-size: .88rem; }
   }
 </style>

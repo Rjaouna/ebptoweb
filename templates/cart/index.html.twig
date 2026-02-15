@@ -37,7 +37,10 @@
             <i class="bi bi-cart3 fs-5 text-secondary"></i>
             <div>
               <div class="fw-semibold">Votre panier est vide.</div>
-              <div class="text-muted small">Ajoutez des articles depuis le catalogue.</div>
+            <div class="text-muted small">
+  Aucun article pour l’instant — <a href="{{ path('catalogue_index') }}" class="link-primary fw-semibold">voir le catalogue</a>.
+</div>
+
             </div>
           </div>
         </div>
@@ -56,11 +59,11 @@
             <hr class="my-3">
 
             <div class="d-grid gap-2">
-              <a class="btn btn-secondary  rounded-pill" href="{{ path('catalogue_index') }}">
+              <a class="btn btn-outline-secondary  rounded-pill" href="{{ path('catalogue_index') }}">
                 <i class="bi bi-grid-3x3-gap me-2"></i>Retour catalogue
               </a>
 
-              <button class="btn btn-success  rounded-pill" id="btnConfirmOrder" type="button">
+              <button class="btn btn-danger rounded-pill" id="btnConfirmOrder" type="button">
                 <i class="bi bi-check2-circle me-2"></i>Valider la commande
               </button>
             </div>
@@ -94,7 +97,7 @@
 
     const IMAGES_BASE = (window.CATALOG_CONFIG && window.CATALOG_CONFIG.imagesBase)
       ? window.CATALOG_CONFIG.imagesBase
-      : "https://catalogue.3skpartsauto.com/export_images";
+      : "https://hopic.ma/downloads/Update_website/SITEWEB/export_images/";
 
     const LOCALE = (window.CATALOG_CONFIG && window.CATALOG_CONFIG.locale) ? window.CATALOG_CONFIG.locale : "fr-FR";
     const CURRENCY = (window.CATALOG_CONFIG && window.CATALOG_CONFIG.currency) ? window.CATALOG_CONFIG.currency : "MAD";

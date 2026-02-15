@@ -10,6 +10,23 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Entity(repositoryClass: CommandeRepository::class)]
 class Commande
 {
+// Statuts (alignés avec le workflow commande)
+    public const STATUS_RESERVED   = 'reserved';   // commande validée / stock bloqué
+    public const STATUS_PREPARING  = 'preparing';  // en préparation
+    public const STATUS_READY      = 'ready';      // préparation terminée / prête
+    public const STATUS_SHIPPED    = 'shipped';    // expédiée
+    public const STATUS_DELIVERED  = 'delivered';  // livrée (optionnel)
+    public const STATUS_CANCELLED  = 'cancelled';  // annulée (optionnel)
+
+    public const STATUSES = [
+        self::STATUS_RESERVED,
+        self::STATUS_PREPARING,
+        self::STATUS_READY,
+        self::STATUS_SHIPPED,
+        self::STATUS_DELIVERED,
+        self::STATUS_CANCELLED,
+    ];
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
