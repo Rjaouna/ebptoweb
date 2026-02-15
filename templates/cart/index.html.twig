@@ -1,7 +1,8 @@
+{# templates/cart/index.html.twig #}
 {% extends 'base.html.twig' %}
 
-{% block title %}Panier
-{% endblock %}
+{% block title %}Panier{% endblock %}
+
 {% block body %}
   <div class="container py-4 cartp-wrap">
 
@@ -15,9 +16,22 @@
             id="cartQtyBadge">{{ cartQty }}</span>
     </div>
 
+    {# ✅ Alerte globale stock #}
+    <div id="cartStockAlert" class="alert alert-danger rounded-4 d-none">
+      <div class="d-flex gap-2 align-items-start">
+        <i class="bi bi-exclamation-triangle-fill mt-1"></i>
+        <div>
+          <div class="fw-semibold">Stock insuffisant sur certains articles.</div>
+          <div class="small">Ajustez les quantités (ou supprimez les articles) avant de valider.</div>
+        </div>
+      </div>
+    </div>
+
     <div class="row g-3">
       <div class="col-lg-8">
-        <div id="cartPageEmpty" class="alert alert-light border rounded-4 cartp-empty {% if cartQty > 0 %}d-none{% endif %}">
+
+        <div id="cartPageEmpty"
+             class="alert alert-light border rounded-4 cartp-empty {% if cartQty > 0 %}d-none{% endif %}">
           <div class="d-flex align-items-center gap-2">
             <i class="bi bi-cart3 fs-5 text-secondary"></i>
             <div>
@@ -41,13 +55,13 @@
             <hr class="my-3">
 
             <div class="d-grid gap-2">
-              <button class="btn btn-outline-danger btn-lg rounded-pill" id="btnCartPageClear" type="button">
-                <i class="bi bi-trash me-2"></i>Vider le panier
-              </button>
-
-              <a class="btn btn-primary btn-lg rounded-pill" href="{{ path('catalogue_index') }}">
+              <a class="btn btn-secondary btn-lg rounded-pill" href="{{ path('catalogue_index') }}">
                 <i class="bi bi-grid-3x3-gap me-2"></i>Retour catalogue
               </a>
+
+              <button class="btn btn-success btn-lg rounded-pill" id="btnConfirmOrder" type="button">
+                <i class="bi bi-check2-circle me-2"></i>Valider la commande
+              </button>
             </div>
 
             <div class="text-muted small mt-3">
@@ -60,217 +74,460 @@
 
   </div>
 
+ <script>
+  window.__CART_MAP = {{ cartMap|json_encode|raw }};
+  window.ORDER_ENDPOINTS = { confirm: "{{ path('order_confirm') }}" };
+  window.STOCK_ENDPOINTS = { reserved: "{{ path('stock_reserved') }}" };
+</script>
+
+{% endblock %}
+
+{% block javascripts %}
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
   <script>
-    window.__CART_MAP = {{ cartMap|json_encode|raw }};
+    const CSV_URL = "{{ path('catalogue_csv') }}";
+    const E = window.CART_ENDPOINTS || {};
+    const ORDER = window.ORDER_ENDPOINTS || {};
+    const STOCK = window.STOCK_ENDPOINTS || {};
+
+    const IMAGES_BASE = (window.CATALOG_CONFIG && window.CATALOG_CONFIG.imagesBase)
+      ? window.CATALOG_CONFIG.imagesBase
+      : "https://catalogue.3skpartsauto.com/export_images";
+
+    const LOCALE = (window.CATALOG_CONFIG && window.CATALOG_CONFIG.locale) ? window.CATALOG_CONFIG.locale : "fr-FR";
+    const CURRENCY = (window.CATALOG_CONFIG && window.CATALOG_CONFIG.currency) ? window.CATALOG_CONFIG.currency : "MAD";
+
+    let cartMap = window.__CART_MAP || {};
+    let productsByUid = new Map();
+
+    let reservedMap = {};       // uid => qty réservée active
+    let reservedLoading = false;
+
+    const listEl = document.getElementById("cartPageList");
+    const emptyEl = document.getElementById("cartPageEmpty");
+    const totalEl = document.getElementById("cartPageTotal");
+    const qtyBadge = document.getElementById("cartQtyBadge");
+    const btnConfirm = document.getElementById("btnConfirmOrder");
+    const stockAlert = document.getElementById("cartStockAlert");
+
+    // -----------------------------
+    // Helpers robustes
+    // -----------------------------
+    function toNumber(v){
+      const n = Number(String(v ?? "").replace(/\s/g,"").replace(",", ".").replace(/[^0-9.\-]/g,""));
+      return Number.isFinite(n) ? n : NaN;
+    }
+
+    function stripQuotes(s){
+      if(s === null || s === undefined) return "";
+      s = String(s).trim();
+      if(s.startsWith('"') && s.endsWith('"')) s = s.slice(1,-1);
+      return s.trim();
+    }
+
+    function field(row, ...names){
+      if(!row) return "";
+      for(const n of names){
+        const v = row[n];
+        if(v !== undefined && v !== null && String(v).trim() !== "") return String(v).trim();
+      }
+      // fallback BOM / espaces
+      for(const k of Object.keys(row)){
+        const kk = String(k).replace(/^\uFEFF/,"").trim();
+        if(names.includes(kk)){
+          const v = row[k];
+          if(v !== undefined && v !== null && String(v).trim() !== "") return String(v).trim();
+        }
+      }
+      return "";
+    }
+
+    function fmtMoney(n){
+      if(!Number.isFinite(n)) return "—";
+      try{
+        return new Intl.NumberFormat(LOCALE,{style:"currency",currency:CURRENCY,maximumFractionDigits:2}).format(n);
+      }catch(e){
+        return n.toFixed(2)+" "+CURRENCY;
+      }
+    }
+
+    function esc(s){
+      return String(s ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+    }
+
+    function imgUrl(uid){ return IMAGES_BASE + "/" + encodeURIComponent(uid) + ".png"; }
+
+    function totalQty(){
+      let n=0;
+      for(const uid in cartMap){
+        const q = Math.floor(toNumber(cartMap[uid])||0);
+        if(q>0) n+=q;
+      }
+      return n;
+    }
+
+    function getPrice(row){
+      const key = (window.CATALOG_CONFIG && window.CATALOG_CONFIG.priceMode==="exc")
+        ? "SalePriceVatExcluded"
+        : "SalePriceVatIncluded";
+      const n = toNumber(field(row, key));
+      return Number.isFinite(n) ? n : NaN;
+    }
+
+    function getStock(row){
+      // ✅ RealStock robuste
+      const n = toNumber(field(row, "RealStock"));
+      return Number.isFinite(n) ? Math.max(0, Math.floor(n)) : null; // null => inconnu
+    }
+
+    function getReserved(uid){
+      const n = toNumber(reservedMap?.[uid]);
+      return Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0;
+    }
+
+    // dispo = stock - réservations
+    function getAvailable(uid){
+      const row = productsByUid.get(uid);
+      const stock = row ? getStock(row) : null;
+      const reserved = getReserved(uid);
+
+      if(stock === null){
+        return { stock:null, reserved, available: Infinity };
+      }
+      return { stock, reserved, available: Math.max(0, stock - reserved) };
+    }
+
+    // -----------------------------
+    // Stock reserved fetch
+    // -----------------------------
+    async function fetchReserved(uids){
+      if(!STOCK.reserved) return;
+      if(reservedLoading) return;
+      reservedLoading = true;
+
+      try{
+        const qs = (uids && uids.length)
+          ? ("?uids=" + uids.map(encodeURIComponent).join(","))
+          : "";
+
+        const res = await fetch(STOCK.reserved + qs, {
+          credentials:"same-origin",
+          cache:"no-store",
+          headers:{ "Accept":"application/json" }
+        });
+
+        const data = await res.json().catch(()=>null);
+        if(res.ok && data?.ok){
+          reservedMap = data.reserved || {};
+        }
+      }catch(e){
+        // silencieux
+      }finally{
+        reservedLoading = false;
+      }
+    }
+
+    // -----------------------------
+    // API panier
+    // -----------------------------
+    async function cartSet(uid, qty){
+      if(!E.set) return false;
+
+      const res = await fetch(E.set, {
+        method:"POST",
+        credentials:"same-origin",
+        headers:{
+          "Content-Type":"application/x-www-form-urlencoded; charset=UTF-8",
+          "X-Requested-With":"XMLHttpRequest",
+          "Accept":"application/json"
+        },
+        body: new URLSearchParams({ id: uid, qty: String(qty) })
+      });
+
+      const data = await res.json().catch(()=>null);
+      if(!res.ok || !data?.ok) return false;
+
+      cartMap = data.cart || {};
+      // sync badge offcanvas
+      window.CartUI?.sync?.().catch(()=>{});
+      return true;
+    }
+
+    function setConfirmEnabled(ok){
+      if(!btnConfirm) return;
+      btnConfirm.disabled = !ok;
+      btnConfirm.classList.toggle("btn-success", ok);
+      btnConfirm.classList.toggle("btn-secondary", !ok);
+      btnConfirm.title = ok ? "Valider la commande" : "Ajuste les quantités (stock insuffisant)";
+    }
+
+    // -----------------------------
+    // Render
+    // -----------------------------
+    function render(){
+      const keys = Object.keys(cartMap).filter(uid => (toNumber(cartMap[uid])||0) > 0);
+      const has = keys.length > 0;
+
+      emptyEl.classList.toggle("d-none", has);
+      listEl.innerHTML = "";
+      totalEl.textContent = "—";
+      qtyBadge.textContent = String(totalQty());
+
+      if(stockAlert) stockAlert.classList.add("d-none");
+
+      if(!has){
+        setConfirmEnabled(false);
+        return;
+      }
+
+      let totalVal = 0;
+      let invalidCount = 0;
+
+      for(const uid of keys.sort((a,b)=>a.localeCompare(b,"fr"))){
+        const qty = Math.floor(toNumber(cartMap[uid])||0);
+        const row = productsByUid.get(uid);
+
+        const title  = field(row, "DesComClear") || field(row, "Designation") || uid;
+        const brand  = field(row, "xx_Marque");
+        const family = field(row, "FamilyName");
+        const veh    = field(row, "xx_Vehicule") || field(row, "xx_VEHICULE");
+
+        const price = row ? getPrice(row) : NaN;
+        const sub = (Number.isFinite(price) ? price * qty : NaN);
+        if(Number.isFinite(sub)) totalVal += sub;
+
+        const { stock, reserved, available } = getAvailable(uid);
+        const hasStockInfo = (stock !== null);
+
+        const over = hasStockInfo && qty > available;
+        if(over) invalidCount++;
+
+        // blocage + / clamp input
+        const canInc = (!hasStockInfo) ? true : (qty < available);
+        const incDisabled = canInc ? "" : "disabled";
+        const inputMax = hasStockInfo ? `max="${available}"` : "";
+
+        // badge ligne
+        const badgeLine = (!hasStockInfo)
+          ? `<span class="badge text-bg-secondary">Stock n/d</span>`
+          : (over
+              ? `<span class="badge text-bg-danger">Stock insuffisant • dispo: ${available} • réservé: ${reserved}</span>`
+              : `<span class="badge text-bg-success">Dispo: ${available}</span> <span class="badge text-bg-secondary">Réservé: ${reserved}</span>`
+            );
+
+        const div = document.createElement("div");
+        div.className = "cartp-item";
+        div.innerHTML = `
+          <div class="cartp-thumb">
+            <img src="${imgUrl(uid)}" alt=""
+              onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><rect width='100%' height='100%' fill='%23f1f3f5'/><text x='50%' y='52%' text-anchor='middle' fill='%236c757d' font-family='Arial' font-size='14'>No image</text></svg>`)}';">
+          </div>
+
+          <div class="cartp-meta">
+            <div class="cartp-title text-truncate">${esc(title)}</div>
+            <div class="cartp-sub">
+              ${brand ? esc(brand) + " • " : ""}${family ? esc(family) + " • " : ""}${veh ? esc(veh) + " • " : ""}UID: ${esc(uid)}
+            </div>
+            <div class="cartp-sub mt-1">
+              ${Number.isFinite(price) ? ("PU: <b>"+fmtMoney(price)+"</b>") : ""}
+              ${Number.isFinite(sub) ? (" • Sous-total: <b>"+fmtMoney(sub)+"</b>") : ""}
+            </div>
+            <div class="mt-1">${badgeLine}</div>
+          </div>
+
+          <div class="cartp-right d-flex">
+            <div class="cartp-qty">
+              <button class="btn btn-outline-secondary btn-sm" data-dec="${uid}" type="button">-</button>
+              <input class="form-control form-control-sm" data-qty="${uid}" type="number" min="0" ${inputMax} value="${qty}">
+              <button class="btn btn-outline-secondary btn-sm" data-inc="${uid}" type="button" ${incDisabled}>+</button>
+            </div>
+            <button class="btn btn-outline-danger btn-sm" data-rm="${uid}" type="button">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+        `;
+        listEl.appendChild(div);
+      }
+
+      if(Number.isFinite(totalVal)) totalEl.textContent = fmtMoney(totalVal);
+
+      const ok = (invalidCount === 0);
+      setConfirmEnabled(ok);
+
+      if(stockAlert){
+        stockAlert.classList.toggle("d-none", ok);
+      }
+    }
+
+    async function refreshReservedAndRender(){
+      const uids = Object.keys(cartMap).filter(uid => (toNumber(cartMap[uid])||0) > 0);
+      await fetchReserved(uids);
+      render();
+    }
+
+    // -----------------------------
+    // Events ( + / - / input / remove )
+    // -----------------------------
+    listEl.addEventListener("click", async (e)=>{
+      const inc = e.target.closest("[data-inc]")?.getAttribute("data-inc");
+      const dec = e.target.closest("[data-dec]")?.getAttribute("data-dec");
+      const rm  = e.target.closest("[data-rm]")?.getAttribute("data-rm");
+
+      if(inc){
+        // refresh avant de décider
+        await fetchReserved([inc]);
+        const q = Math.floor(toNumber(cartMap[inc])||0);
+        const { stock, available } = getAvailable(inc);
+
+        if(stock !== null && q >= available){
+          // bloqué
+          render();
+          return;
+        }
+        if(await cartSet(inc, q + 1)){
+          await refreshReservedAndRender();
+        }
+        return;
+      }
+
+      if(dec){
+        const q = Math.floor(toNumber(cartMap[dec])||0);
+        const next = Math.max(0, q - 1);
+        if(await cartSet(dec, next)){
+          await refreshReservedAndRender();
+        }
+        return;
+      }
+
+      if(rm){
+        if(await cartSet(rm, 0)){
+          await refreshReservedAndRender();
+        }
+      }
+    });
+
+    listEl.addEventListener("change", async (e)=>{
+      const inp = e.target.closest("[data-qty]");
+      if(!inp) return;
+
+      const uid = inp.getAttribute("data-qty");
+      let q = Math.max(0, Math.floor(toNumber(inp.value)||0));
+
+      await fetchReserved([uid]);
+      const { stock, available } = getAvailable(uid);
+
+      if(stock !== null && q > available) q = available; // clamp
+      inp.value = String(q);
+
+      if(await cartSet(uid, q)){
+        await refreshReservedAndRender();
+      }
+    });
+
+    // -----------------------------
+    // Load CSV -> hydrate
+    // -----------------------------
+    async function loadCsv(){
+      const res = await fetch(CSV_URL, { cache:"no-store" });
+      if(!res.ok) return;
+
+      const text = await res.text();
+
+      Papa.parse(text,{
+        header:true,
+        delimiter:";",
+        skipEmptyLines:true,
+        transformHeader:(h)=> stripQuotes(String(h).replace(/^\uFEFF/,"").trim()),
+        transform:(v)=> stripQuotes(v),
+        complete:(results)=>{
+          let rows = (results.data || []);
+          const fields = results?.meta?.fields || [];
+          if(fields.length < 5){
+            Papa.parse(text,{
+              header:true,
+              delimiter:",",
+              skipEmptyLines:true,
+              transformHeader:(h)=> stripQuotes(String(h).replace(/^\uFEFF/,"").trim()),
+              transform:(v)=> stripQuotes(v),
+              complete:(r2)=> hydrateProducts(r2.data||[])
+            });
+            return;
+          }
+          hydrateProducts(rows);
+        }
+      });
+    }
+
+    function hydrateProducts(rows){
+      productsByUid = new Map();
+      for(const r of rows){
+        const uid = field(r, "UniqueId") || field(r, "Id", "ID", "id");
+        if(uid) productsByUid.set(String(uid).trim(), r);
+      }
+
+      // expose si besoin
+      window.__productByUid = productsByUid;
+
+      refreshReservedAndRender();
+    }
+
+    // -----------------------------
+    // Init
+    // -----------------------------
+    (async () => {
+      setConfirmEnabled(false);
+
+      try{
+        await loadCsv();
+      }catch(e){
+        // si CSV KO, on render quand même (stock inconnu => pas de lock)
+        render();
+      }
+
+      // refresh réservations toutes les 20s
+      setInterval(() => {
+        refreshReservedAndRender().catch(()=>{});
+      }, 20000);
+    })();
+
+    // -----------------------------
+    // Confirm order
+    // -----------------------------
+    btnConfirm?.addEventListener("click", async () => {
+      if(btnConfirm.disabled) return;
+
+      btnConfirm.disabled = true;
+
+      try {
+        // sécurité: re-check juste avant
+        await refreshReservedAndRender();
+        if(btnConfirm.disabled) return;
+
+        const res = await fetch(ORDER.confirm, {
+          method: "POST",
+          credentials: "same-origin",
+          headers: {
+            "X-Requested-With": "XMLHttpRequest",
+            "Accept": "application/json"
+          }
+        });
+
+        const data = await res.json().catch(() => null);
+
+        if (!res.ok || !data?.ok) {
+          alert(data?.message || "Erreur lors de la validation.");
+          await refreshReservedAndRender();
+          return;
+        }
+
+        alert(`✅ Commande ${data.reference}\nTotal TTC: ${data.totalTtc}`);
+        window.location.reload();
+      } catch (e) {
+        alert("Erreur réseau.");
+      } finally {
+        btnConfirm.disabled = false;
+      }
+    });
   </script>
 {% endblock %}
-
-
-{% block javascripts %} <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-	 <script>
-	  const CSV_URL = "{{ path('catalogue_csv') }}";
-	  const E = window.CART_ENDPOINTS || {};
-	  const IMAGES_BASE = (window.CATALOG_CONFIG && window.CATALOG_CONFIG.imagesBase) ? window.CATALOG_CONFIG.imagesBase : "https://catalogue.3skpartsauto.com/export_images";
-	  const LOCALE = (window.CATALOG_CONFIG && window.CATALOG_CONFIG.locale) ? window.CATALOG_CONFIG.locale : "fr-FR";
-	  const CURRENCY = (window.CATALOG_CONFIG && window.CATALOG_CONFIG.currency) ? window.CATALOG_CONFIG.currency : "MAD";
-	
-	  let cartMap = window.__CART_MAP || {};
-	  let productsByUid = new Map();
-	
-	  const listEl = document.getElementById("cartPageList");
-	  const emptyEl = document.getElementById("cartPageEmpty");
-	  const totalEl = document.getElementById("cartPageTotal");
-	  const qtyBadge = document.getElementById("cartQtyBadge");
-	  const btnClear = document.getElementById("btnCartPageClear");
-	
-	  function toNumber(v){
-	    const n = Number(String(v ?? "").replace(",", ".").replace(/[^0-9.\-]/g,""));
-	    return Number.isFinite(n) ? n : NaN;
-	  }
-	  function fmtMoney(n){
-	    if(!Number.isFinite(n)) return "—";
-	    try{ return new Intl.NumberFormat(LOCALE,{style:"currency",currency:CURRENCY,maximumFractionDigits:2}).format(n); }
-	    catch(e){ return n.toFixed(2)+" "+CURRENCY; }
-	  }
-	  function esc(s){
-	    return String(s ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
-	  }
-	  function imgUrl(uid){ return IMAGES_BASE + "/" + encodeURIComponent(uid) + ".png"; }
-	
-	  function totalQty(){
-	    let n=0;
-	    for(const uid in cartMap){
-	      const q = Math.floor(toNumber(cartMap[uid])||0);
-	      if(q>0) n+=q;
-	    }
-	    return n;
-	  }
-	
-	  function getPrice(row){
-	    const key = (window.CATALOG_CONFIG && window.CATALOG_CONFIG.priceMode==="exc") ? "SalePriceVatExcluded" : "SalePriceVatIncluded";
-	    const n = toNumber(row?.[key]);
-	    return Number.isFinite(n) ? n : NaN;
-	  }
-	
-	  async function cartSet(uid, qty){
-	    const res = await fetch(E.set, {
-	      method:"POST",
-	      credentials:"same-origin",
-	      headers:{ "Content-Type":"application/x-www-form-urlencoded; charset=UTF-8", "X-Requested-With":"XMLHttpRequest" },
-	      body: new URLSearchParams({ id: uid, qty: String(qty) })
-	    });
-	    const data = await res.json().catch(()=>null);
-	    if(!res.ok || !data?.ok) return false;
-	    cartMap = data.cart || {};
-	    if(window.CartUI) window.CartUI.sync().catch(()=>{});
-	    render();
-	    return true;
-	  }
-	
-	  async function cartClear(){
-	    const res = await fetch(E.clear, {
-	      method:"POST",
-	      credentials:"same-origin",
-	      headers:{ "X-Requested-With":"XMLHttpRequest", "Accept":"application/json" }
-	    });
-	    const data = await res.json().catch(()=>null);
-	    if(!res.ok || !data?.ok) return false;
-	    cartMap = {};
-	    if(window.CartUI) window.CartUI.sync().catch(()=>{});
-	    render();
-	    return true;
-	  }
-	
-	  function render(){
-	    const keys = Object.keys(cartMap).filter(uid => (toNumber(cartMap[uid])||0) > 0);
-	    const has = keys.length > 0;
-	
-	    emptyEl.classList.toggle("d-none", has);
-	    listEl.innerHTML = "";
-	    totalEl.textContent = "—";
-	    qtyBadge.textContent = String(totalQty());
-	
-	    if(!has) return;
-	
-	    let totalVal = 0;
-	
-	    for(const uid of keys.sort((a,b)=>a.localeCompare(b,"fr"))){
-	      const qty = Math.floor(toNumber(cartMap[uid])||0);
-	      const row = productsByUid.get(uid);
-	
-	      const title = row?.DesComClear || row?.Designation || uid;
-	      const brand = row?.xx_Marque || "";
-	      const veh = row?.xx_Vehicule || row?.xx_VEHICULE || "";
-	      const family = row?.FamilyName || "";
-	
-	      const price = row ? getPrice(row) : NaN;
-	      const sub = (Number.isFinite(price) ? price * qty : NaN);
-	      if(Number.isFinite(sub)) totalVal += sub;
-	
-	      const div = document.createElement("div");
-	      div.className = "cartp-item";
-	      div.innerHTML = `
-	        <div class="cartp-thumb">
-	          <img src="${imgUrl(uid)}" alt=""
-	            onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><rect width='100%' height='100%' fill='%23f1f3f5'/><text x='50%' y='52%' text-anchor='middle' fill='%236c757d' font-family='Arial' font-size='14'>No image</text></svg>`)}';">
-	        </div>
-	
-	        <div class="cartp-meta">
-	          <div class="cartp-title text-truncate">${esc(title)}</div>
-	          <div class="cartp-sub">
-	            ${brand ? esc(brand) + " • " : ""}${family ? esc(family) + " • " : ""}${veh ? esc(veh) + " • " : ""}UID: ${esc(uid)}
-	          </div>
-	          <div class="cartp-sub mt-1">
-	            ${Number.isFinite(price) ? ("PU: <b>"+fmtMoney(price)+"</b>") : ""}
-	            ${Number.isFinite(sub) ? (" • Sous-total: <b>"+fmtMoney(sub)+"</b>") : ""}
-	          </div>
-	        </div>
-	
-	        <div class="cartp-right d-flex">
-	          <div class="cartp-qty">
-	            <button class="btn btn-outline-secondary btn-sm" data-dec="${uid}" type="button">-</button>
-	            <input class="form-control form-control-sm" data-qty="${uid}" type="number" min="1" value="${qty}">
-	            <button class="btn btn-outline-secondary btn-sm" data-inc="${uid}" type="button">+</button>
-	          </div>
-	          <button class="btn btn-outline-danger btn-sm" data-rm="${uid}" type="button">
-	            <i class="bi bi-x-lg"></i> 
-	          </button>
-	        </div>
-	      `;
-	      listEl.appendChild(div);
-	    }
-	
-	    if(Number.isFinite(totalVal)) totalEl.textContent = fmtMoney(totalVal);
-	  }
-	
-	  listEl.addEventListener("click", async (e)=>{
-	    const inc = e.target.closest("[data-inc]")?.getAttribute("data-inc");
-	    const dec = e.target.closest("[data-dec]")?.getAttribute("data-dec");
-	    const rm  = e.target.closest("[data-rm]")?.getAttribute("data-rm");
-	
-	    if(inc){
-	      const q = Math.floor(toNumber(cartMap[inc])||0) + 1;
-	      await cartSet(inc, q);
-	    }
-	    if(dec){
-	      const q = Math.max(1, Math.floor(toNumber(cartMap[dec])||1) - 1);
-	      await cartSet(dec, q);
-	    }
-	    if(rm){
-	      await cartSet(rm, 0);
-	    }
-	  });
-	
-	  listEl.addEventListener("change", async (e)=>{
-	    const inp = e.target.closest("[data-qty]");
-	    if(!inp) return;
-	    const uid = inp.getAttribute("data-qty");
-	    const q = Math.max(1, Math.floor(toNumber(inp.value)||1));
-	    await cartSet(uid, q);
-	  });
-	
-	  btnClear.addEventListener("click", async ()=>{ await cartClear(); });
-	
-	  async function loadCsv(){
-	    const res = await fetch(CSV_URL, { cache:"no-store" });
-	    if(!res.ok) return;
-	
-	    const text = await res.text();
-	
-	    Papa.parse(text,{
-	      header:true,
-	      delimiter:";",
-	      skipEmptyLines:true,
-	      complete:(results)=>{
-	        let rows = (results.data || []);
-	        // fallback delimiter
-	        const fields = results?.meta?.fields || [];
-	        if(fields.length < 5){
-	          Papa.parse(text,{ header:true, delimiter:",", skipEmptyLines:true,
-	            complete:(r2)=>{ rows = (r2.data||[]); hydrateProducts(rows); }
-	          });
-	          return;
-	        }
-	        hydrateProducts(rows);
-	      }
-	    });
-	  }
-	
-	  function hydrateProducts(rows){
-	    productsByUid = new Map();
-	    for(const r of rows){
-	      const uid = r?.UniqueId || r?.Id || r?.ID || r?.id;
-	      if(uid) productsByUid.set(String(uid).trim(), r);
-	    }
-	
-	    // expose to menu offcanvas too
-	    window.__productByUid = productsByUid;
-	    if(window.CartUI) window.CartUI.sync().catch(()=>{});
-	    render();
-	  }
-	
-	  // init
-	  loadCsv().catch(()=>{ render(); });
-	</script>
-{% endblock %}
-

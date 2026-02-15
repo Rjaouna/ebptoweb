@@ -65,6 +65,11 @@
     return "";
   }
 
+  function cssEsc(v) {
+    if (window.CSS && typeof CSS.escape === "function") return CSS.escape(String(v));
+    return String(v).replace(/[^a-zA-Z0-9_-]/g, "\\$&");
+  }
+
   // -----------------------------
   // Parse date "robuste"
   // -----------------------------
@@ -100,7 +105,6 @@
   }
 
   function rowNewnessDate(r) {
-    // tu peux basculer sur sysModifiedDate si tu préfères
     return parseDateAny(field(r, "sysCreatedDate"));
   }
 
@@ -113,7 +117,7 @@
   }
 
   // -----------------------------
-  // DOM refs (doivent exister dans _catalogue.html.twig)
+  // DOM refs
   // -----------------------------
   const grid = el("grid");
   const chips = el("chips");
@@ -141,12 +145,58 @@
   // -----------------------------
   const CartUI = window.CartUI;
 
-  // état local miroir (on lit toujours le vrai depuis CartUI.getState())
   function getCartState() {
     try {
       return (CartUI && typeof CartUI.getState === "function") ? (CartUI.getState() || {}) : {};
     } catch (_) {
       return {};
+    }
+  }
+
+  // -----------------------------
+  // ✅ Réservations (StockReservation)
+  // -----------------------------
+  let reservedMap = {};     // uid => qty réservée active (somme)
+  let reservedLoading = false;
+
+  function collectVisibleUids() {
+    const uids = Array.from(document.querySelectorAll("[data-cart-form][data-uid]"))
+      .map((n) => n.getAttribute("data-uid"))
+      .filter(Boolean);
+    return uids.slice(0, 300);
+  }
+
+  function collectUidsFromRows(rows) {
+    return (rows || []).map(getUid).filter(Boolean).slice(0, 300);
+  }
+
+  async function fetchReserved(uids = []) {
+    const urlBase = window.STOCK_ENDPOINTS?.reserved;
+    if (!urlBase) return;
+
+    if (reservedLoading) return;
+    reservedLoading = true;
+
+    try {
+      const qs = (uids && uids.length)
+        ? ("?uids=" + uids.map(encodeURIComponent).join(","))
+        : "";
+
+      const res = await fetch(urlBase + qs, {
+        credentials: "same-origin",
+        cache: "no-store",
+        headers: { "Accept": "application/json" }
+      });
+
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.ok) {
+        reservedMap = data.reserved || {};
+        updateCardStockLocks();
+      }
+    } catch (_) {
+      // silencieux
+    } finally {
+      reservedLoading = false;
     }
   }
 
@@ -186,7 +236,24 @@
   }
 
   // -----------------------------
-  // Filtres : responsive (move #filtersCard)
+  // Stock info (✅ inclut réservations)
+  // -----------------------------
+  function getStockInfoByUid(uid) {
+    const r = allRowsByUid.get(uid);
+    const stRaw = r ? getStock(r) : NaN;
+
+    const stock = Number.isFinite(stRaw) ? Math.max(0, Math.floor(stRaw)) : null; // null => inconnu
+    const cart = getCartState();
+    const inCart = Math.max(0, Math.floor(toNumber(cart?.[uid]) || 0));
+    const reserved = Math.max(0, Math.floor(toNumber(reservedMap?.[uid]) || 0));
+
+    const remaining = (stock === null) ? Infinity : Math.max(0, stock - reserved - inCart);
+
+    return { stock, reserved, inCart, remaining };
+  }
+
+  // -----------------------------
+  // Filtres : responsive
   // -----------------------------
   function mountFiltersResponsive() {
     const card = el("filtersCard");
@@ -251,7 +318,7 @@
   }
 
   // -----------------------------
-  // UI chips
+  // Chips
   // -----------------------------
   function getActiveFilters() {
     const q = (qTop?.value || "").trim();
@@ -359,7 +426,7 @@
       return copy;
     }
 
-    return copy; // relevance = ordre original
+    return copy;
   }
 
   // -----------------------------
@@ -426,355 +493,321 @@
     if (btnMore) btnMore.classList.toggle("d-none", done || filteredRows.length === 0);
   }
 
-
-
-  function cssEsc(v) {
-  if (window.CSS && typeof CSS.escape === "function") return CSS.escape(String(v));
-  return String(v).replace(/[^a-zA-Z0-9_-]/g, "\\$&");
-}
-
-function getStockInfoByUid(uid) {
-  const r = allRowsByUid.get(uid);
-  const stRaw = r ? getStock(r) : NaN;
-
-  const stock = Number.isFinite(stRaw) ? Math.max(0, Math.floor(stRaw)) : null; // null => stock inconnu
-  const cart = getCartState();
-  const inCart = Math.max(0, Math.floor(toNumber(cart?.[uid]) || 0));
-
-  const remaining = (stock === null) ? Infinity : Math.max(0, stock - inCart);
-
-  return { stock, inCart, remaining };
-}
-
   // -----------------------------
   // Cards
   // -----------------------------
-function updateCardCartBadges() {
-  const cart = getCartState();
+  function updateCardCartBadges() {
+    const cart = getCartState();
 
-  document.querySelectorAll("[data-card-badge]").forEach((b) => {
-    const uid = b.getAttribute("data-card-badge");
-    const q = Math.floor(toNumber(cart?.[uid]) || 0);
+    document.querySelectorAll("[data-card-badge]").forEach((b) => {
+      const uid = b.getAttribute("data-card-badge");
+      const q = Math.floor(toNumber(cart?.[uid]) || 0);
 
-    if (q > 0) {
-      b.classList.remove("d-none");
-      b.innerHTML = `<i class="bi bi-cart-check"></i><span>${q}</span>`;
-    } else {
-      b.classList.add("d-none");
-      b.innerHTML = "";
-    }
-  });
+      if (q > 0) {
+        b.classList.remove("d-none");
+        b.innerHTML = `<i class="bi bi-cart-check"></i><span>${q}</span>`;
+      } else {
+        b.classList.add("d-none");
+        b.innerHTML = "";
+      }
+    });
 
-  // ✅ met à jour les boutons/qty selon stock restant
-  updateCardStockLocks();
-}
-function updateCardStockLocks() {
-  document.querySelectorAll("[data-cart-form][data-uid]").forEach((form) => {
-    const uid = form.getAttribute("data-uid");
-    if (!uid) return;
+    updateCardStockLocks();
+  }
 
-    const info = getStockInfoByUid(uid);
+  function updateCardStockLocks() {
+    document.querySelectorAll("[data-cart-form][data-uid]").forEach((form) => {
+      const uid = form.getAttribute("data-uid");
+      if (!uid) return;
 
-    const input = form.querySelector('input[name="qty"]');
-    const btnInc = form.querySelector('[data-action="qty-inc"]');
-    const btnDec = form.querySelector('[data-action="qty-dec"]');
-    const btnSubmit = form.querySelector('button[type="submit"]');
+      const info = getStockInfoByUid(uid);
 
-    const card = form.closest(".catalog-card");
-    const stockBadge = card?.querySelector(`[data-stock-badge="${cssEsc(uid)}"]`);
+      const input = form.querySelector('input[name="qty"]');
+      const btnInc = form.querySelector('[data-action="qty-inc"]');
+      const btnDec = form.querySelector('[data-action="qty-dec"]');
+      const btnSubmit = form.querySelector('button[type="submit"]');
 
-    // badge Dispo/Rupture basé sur stock restant
-    if (stockBadge) {
-      const ok = info.remaining > 0; // Infinity => ok
-      stockBadge.className = `badge rounded-pill ${ok ? "text-bg-success" : "text-bg-danger"}`;
-      stockBadge.textContent = ok ? "Dispo" : "Rupture";
-    }
+      const card = form.closest(".catalog-card");
+      const stockBadge = card?.querySelector(`[data-stock-badge="${cssEsc(uid)}"]`);
 
-    if (!input || !btnInc || !btnDec || !btnSubmit) return;
-
-    const canAdd = info.remaining > 0; // Infinity => true
-
-    if (!canAdd) {
-      input.disabled = true;
-      btnInc.disabled = true;
-      btnDec.disabled = true;
-
-      btnSubmit.disabled = true;
-      btnSubmit.classList.remove("btn-primary");
-      btnSubmit.classList.add("btn-secondary");
-      btnSubmit.title = "Rupture de stock";
-      return;
-    }
-
-    // ré-active
-    input.disabled = false;
-    btnSubmit.disabled = false;
-    btnSubmit.classList.remove("btn-secondary");
-    btnSubmit.classList.add("btn-primary");
-    btnSubmit.title = "Ajouter au panier";
-
-    let q = Math.max(1, Math.floor(toNumber(input.value) || 1));
-
-    if (Number.isFinite(info.stock)) {
-      const maxAdd = Math.max(1, info.remaining);
-      input.setAttribute("max", String(maxAdd));
-
-      if (q > maxAdd) {
-        q = maxAdd;
-        input.value = String(q);
-        cardQtyDraft.set(uid, q);
+      if (stockBadge) {
+        const ok = info.remaining > 0;
+        stockBadge.className = `badge rounded-pill ${ok ? "text-bg-success" : "text-bg-danger"}`;
+        stockBadge.textContent = ok
+          ? (Number.isFinite(info.stock) ? `Dispo (${info.remaining})` : "Dispo")
+          : "Rupture";
       }
 
-      btnInc.disabled = q >= maxAdd;
-    } else {
-      input.removeAttribute("max");
-      btnInc.disabled = false;
-    }
+      if (!input || !btnInc || !btnDec || !btnSubmit) return;
 
-    btnDec.disabled = q <= 1;
-  });
-}
+      const canAdd = info.remaining > 0;
 
+      if (!canAdd) {
+        input.disabled = true;
+        btnInc.disabled = true;
+        btnDec.disabled = true;
 
+        btnSubmit.disabled = true;
+        btnSubmit.classList.remove("btn-primary");
+        btnSubmit.classList.add("btn-secondary");
+        btnSubmit.title = "Rupture de stock";
+        return;
+      }
 
-function buildCard(r) {
-  const uid = getUid(r);
-  const ref = getRef(r);
+      input.disabled = false;
+      btnSubmit.disabled = false;
+      btnSubmit.classList.remove("btn-secondary");
+      btnSubmit.classList.add("btn-primary");
+      btnSubmit.title = "Ajouter au panier";
 
-  const cap = field(r, "DesComClear") || "Produit";
-  const brand = field(r, "xx_Marque");
-  const family = field(r, "FamilyName");
-  const veh = field(r, "xx_Vehicule");
-  const year = field(r, "xx_Annee");
+      let q = Math.max(1, Math.floor(toNumber(input.value) || 1));
 
-  const price = getPrice(r, priceMode);
-  const isNew = isNewRow(r);
+      if (Number.isFinite(info.stock)) {
+        const maxAdd = Math.max(1, info.remaining);
+        input.setAttribute("max", String(maxAdd));
 
-  // panier -> quantité déjà dans le panier
-  const cart = getCartState();
-  const inCartQty = uid ? Math.max(0, Math.floor(toNumber(cart?.[uid]) || 0)) : 0;
-
-  // stock + remaining (stock restant)
-  const stockRaw = getStock(r);
-  const stock = Number.isFinite(stockRaw) ? Math.max(0, Math.floor(stockRaw)) : null; // null => inconnu
-  const remaining = (stock === null) ? Infinity : Math.max(0, stock - inCartQty);
-  const stockOk = remaining > 0;
-
-  const controlsDisabled = (!uid || !stockOk) ? "disabled" : "";
-
-  const maxAdd = (stock === null) ? null : Math.max(0, remaining);
-
-  // draft qty (clamp selon stock restant)
-  let draftClamped = Math.max(1, Math.floor(toNumber(cardQtyDraft.get(uid)) || 1));
-  if (Number.isFinite(stock)) {
-    draftClamped = Math.min(draftClamped, Math.max(1, maxAdd || 1));
-  }
-  if (uid) cardQtyDraft.set(uid, draftClamped);
-
-  const decDisabled = (controlsDisabled || draftClamped <= 1) ? "disabled" : "";
-  const incDisabled =
-    (controlsDisabled || (Number.isFinite(stock) && draftClamped >= Math.max(1, maxAdd)))
-      ? "disabled"
-      : "";
-
-  const imgUrl = getImageUrlByUid(uid);
-
-  const col = document.createElement("div");
-  col.className = "col-12 col-sm-6 col-xl-3";
-
-  col.innerHTML = `
-    <div class="catalog-card h-100 p-3">
-
-      <span class="card-cart-pill ${inCartQty > 0 ? "" : "d-none"}" data-card-badge="${escHtml(uid)}">
-        <i class="bi bi-cart-check"></i><span>${inCartQty}</span>
-      </span>
-
-      <div class="thumb ratio ratio-4x3 mb-3">
-        ${imgUrl
-          ? `<img src="${escHtml(imgUrl)}" alt="${escHtml(cap)}" loading="lazy"
-              onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,${encodeURIComponent(
-                `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="450">
-                   <rect width="100%" height="100%" fill="%23f3f4f6"/>
-                   <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle"
-                     fill="%236b7280" font-family="Arial" font-size="20">Image indisponible</text>
-                 </svg>`
-              )}';">`
-          : `<div class="d-flex align-items-center justify-content-center text-muted small">Photo</div>`
+        if (q > maxAdd) {
+          q = maxAdd;
+          input.value = String(q);
+          cardQtyDraft.set(uid, q);
         }
-      </div>
 
-      <div class="d-flex flex-wrap gap-2 mb-2">
-        ${isNew ? `<span class="badge rounded-pill text-bg-warning"><i class="bi bi-stars me-1"></i>Nouveau</span>` : ``}
-        ${brand ? `<span class="badge rounded-pill badge-soft">${escHtml(brand)}</span>` : ""}
-        ${family ? `<span class="badge rounded-pill badge-family">${escHtml(family)}</span>` : ""}
+        btnInc.disabled = q >= maxAdd;
+      } else {
+        input.removeAttribute("max");
+        btnInc.disabled = false;
+      }
 
-        <span class="badge rounded-pill ${stockOk ? "text-bg-success" : "text-bg-danger"}"
-              data-stock-badge="${escHtml(uid)}">
-          ${stockOk ? "Dispo" : "Rupture"}
+      btnDec.disabled = q <= 1;
+    });
+  }
+
+  function buildCard(r) {
+    const uid = getUid(r);
+    const ref = getRef(r);
+
+    const cap = field(r, "DesComClear") || "Produit";
+    const brand = field(r, "xx_Marque");
+    const family = field(r, "FamilyName");
+    const veh = field(r, "xx_Vehicule");
+    const year = field(r, "xx_Annee");
+
+    const price = getPrice(r, priceMode);
+    const isNew = isNewRow(r);
+
+    const info = uid ? getStockInfoByUid(uid) : { stock: null, reserved: 0, inCart: 0, remaining: 0 };
+
+    const inCartQty = info.inCart;
+    const remaining = info.remaining;
+    const stockOk = remaining > 0;
+
+    const controlsDisabled = (!uid || !stockOk) ? "disabled" : "";
+    const maxAdd = (info.stock === null) ? null : Math.max(0, remaining);
+
+    let draftClamped = Math.max(1, Math.floor(toNumber(cardQtyDraft.get(uid)) || 1));
+    if (Number.isFinite(info.stock)) {
+      draftClamped = Math.min(draftClamped, Math.max(1, maxAdd || 1));
+    }
+    if (uid) cardQtyDraft.set(uid, draftClamped);
+
+    const decDisabled = (controlsDisabled || draftClamped <= 1) ? "disabled" : "";
+    const incDisabled =
+      (controlsDisabled || (Number.isFinite(info.stock) && draftClamped >= Math.max(1, maxAdd)))
+        ? "disabled"
+        : "";
+
+    const imgUrl = getImageUrlByUid(uid);
+
+    const col = document.createElement("div");
+    col.className = "col-12 col-sm-6 col-xl-3";
+
+    col.innerHTML = `
+      <div class="catalog-card h-100 p-3">
+
+        <span class="card-cart-pill ${inCartQty > 0 ? "" : "d-none"}" data-card-badge="${escHtml(uid)}">
+          <i class="bi bi-cart-check"></i><span>${inCartQty}</span>
         </span>
-      </div>
 
-      <div class="fw-semibold fs-6 card-title-trunc">${escHtml(cap)}</div>
-      <div class="mt-2 small text-muted">${escHtml([veh, year].filter(Boolean).join(" • "))}</div>
+        <div class="thumb ratio ratio-4x3 mb-3">
+          ${imgUrl
+            ? `<img src="${escHtml(imgUrl)}" alt="${escHtml(cap)}" loading="lazy"
+                onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,${encodeURIComponent(
+                  `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="450">
+                     <rect width="100%" height="100%" fill="%23f3f4f6"/>
+                     <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle"
+                       fill="%236b7280" font-family="Arial" font-size="20">Image indisponible</text>
+                   </svg>`
+                )}';">`
+            : `<div class="d-flex align-items-center justify-content-center text-muted small">Photo</div>`
+          }
+        </div>
 
-      <div class="d-flex align-items-center justify-content-between mt-3">
-        <div class="fw-bold text-primary">${Number.isFinite(price) ? escHtml(fmtMoney(price)) : "—"}</div>
-        <div class="small text-muted">${priceMode === "inc" ? "TTC" : "HT"}</div>
-      </div>
+        <div class="d-flex flex-wrap gap-2 mb-2">
+          ${isNew ? `<span class="badge rounded-pill text-bg-warning"><i class="bi bi-stars me-1"></i>Nouveau</span>` : ``}
+          ${brand ? `<span class="badge rounded-pill badge-soft">${escHtml(brand)}</span>` : ""}
+          ${family ? `<span class="badge rounded-pill badge-family">${escHtml(family)}</span>` : ""}
 
-      <div class="mt-3 small text-muted">
-        ${ref ? `Référence : <span class="fw-semibold">${escHtml(ref)}</span>` : `<span class="text-danger">Référence manquante</span>`}
-      </div>
+          <span class="badge rounded-pill ${stockOk ? "text-bg-success" : "text-bg-danger"}"
+                data-stock-badge="${escHtml(uid)}">
+            ${stockOk ? (Number.isFinite(info.stock) ? `Dispo (${remaining})` : "Dispo") : "Rupture"}
+          </span>
+        </div>
 
-      <div class="mt-3">
-        <form class="d-flex align-items-center gap-2" data-cart-form data-uid="${escHtml(uid)}">
-          <input type="hidden" name="id" value="${escHtml(uid)}">
+        <div class="fw-semibold fs-6 card-title-trunc">${escHtml(cap)}</div>
+        <div class="mt-2 small text-muted">${escHtml([veh, year].filter(Boolean).join(" • "))}</div>
 
-          <div class="input-group input-group-sm" style="width: 140px;">
-            <button class="btn btn-outline-secondary" type="button"
-                    data-action="qty-dec" data-uid="${escHtml(uid)}" ${decDisabled}>
-              <i class="bi bi-dash"></i>
+        <div class="d-flex align-items-center justify-content-between mt-3">
+          <div class="fw-bold text-primary">${Number.isFinite(price) ? escHtml(fmtMoney(price)) : "—"}</div>
+          <div class="small text-muted">${priceMode === "inc" ? "TTC" : "HT"}</div>
+        </div>
+
+        <div class="mt-3 small text-muted">
+          ${ref ? `Référence : <span class="fw-semibold">${escHtml(ref)}</span>` : `<span class="text-danger">Référence manquante</span>`}
+        </div>
+
+        <div class="mt-3">
+          <form class="d-flex align-items-center gap-2" data-cart-form data-uid="${escHtml(uid)}">
+            <input type="hidden" name="id" value="${escHtml(uid)}">
+
+            <div class="input-group input-group-sm" style="width: 140px;">
+              <button class="btn btn-outline-secondary" type="button"
+                      data-action="qty-dec" data-uid="${escHtml(uid)}" ${decDisabled}>
+                <i class="bi bi-dash"></i>
+              </button>
+
+              <input class="form-control text-center"
+                     name="qty" type="number" min="1"
+                     ${Number.isFinite(info.stock) ? `max="${Math.max(1, maxAdd)}"` : ``}
+                     value="${draftClamped}"
+                     data-action="qty-input" data-uid="${escHtml(uid)}" ${controlsDisabled}>
+
+              <button class="btn btn-outline-secondary" type="button"
+                      data-action="qty-inc" data-uid="${escHtml(uid)}" ${incDisabled}>
+                <i class="bi bi-plus"></i>
+              </button>
+            </div>
+
+            <button class="btn ${stockOk ? "btn-primary" : "btn-secondary"} btn-sm flex-fill"
+                    type="submit" ${controlsDisabled}
+                    title="${stockOk ? "Ajouter au panier" : "Rupture de stock"}">
+              <i class="bi bi-cart-plus"></i>
             </button>
-
-            <input class="form-control text-center"
-                   name="qty" type="number" min="1"
-                   ${Number.isFinite(stock) ? `max="${Math.max(1, maxAdd)}"` : ``}
-                   value="${draftClamped}"
-                   data-action="qty-input" data-uid="${escHtml(uid)}" ${controlsDisabled}>
-
-            <button class="btn btn-outline-secondary" type="button"
-                    data-action="qty-inc" data-uid="${escHtml(uid)}" ${incDisabled}>
-              <i class="bi bi-plus"></i>
-            </button>
-          </div>
-
-          <button class="btn ${stockOk ? "btn-primary" : "btn-secondary"} btn-sm flex-fill"
-                  type="submit" ${controlsDisabled}
-                  title="${stockOk ? "Ajouter au panier" : "Rupture de stock"}">
-            <i class="bi bi-cart-plus"></i>
-          </button>
-        </form>
+          </form>
+        </div>
       </div>
-    </div>
-  `;
+    `;
 
-  return col;
-}
-
+    return col;
+  }
 
   function renderGrid(rows) {
     if (!grid) return;
     grid.innerHTML = "";
     if (empty) empty.classList.toggle("d-none", rows.length !== 0);
 
-    for (const r of rows) {
-      grid.appendChild(buildCard(r));
-    }
+    for (const r of rows) grid.appendChild(buildCard(r));
 
     updateCardCartBadges();
-  }
 
-  // Qty buttons
-  if (grid) {
-   grid.addEventListener("click", (e) => {
-  const btn = e.target.closest("[data-action]");
-  if (!btn) return;
-
-  const action = btn.getAttribute("data-action");
-  const uid = btn.getAttribute("data-uid");
-  if (!uid) return;
-
-  const form = btn.closest("form");
-  const input = form?.querySelector(`input[name="qty"][data-uid="${uid}"]`);
-  if (!input || input.disabled) return;
-
-  let q = Math.max(1, Math.floor(toNumber(input.value) || 1));
-
-  if (action === "qty-dec") {
-    q = Math.max(1, q - 1);
-  }
-
-  if (action === "qty-inc") {
-    const info = getStockInfoByUid(uid);
-    const lim = Number.isFinite(info.stock) ? Math.max(1, info.remaining) : Infinity;
-    q = Math.min(q + 1, lim);
-  }
-
-  input.value = String(q);
-  cardQtyDraft.set(uid, q);
-
-  updateCardStockLocks();
-});
-
-
-grid.addEventListener("input", debounce((e) => {
-  const inp = e.target.closest("[data-action='qty-input']");
-  if (!inp) return;
-
-  const uid = inp.getAttribute("data-uid");
-  if (!uid) return;
-
-  const info = getStockInfoByUid(uid);
-  let q = Math.max(1, Math.floor(toNumber(inp.value) || 1));
-
-  if (Number.isFinite(info.stock)) {
-    q = Math.min(q, Math.max(1, info.remaining));
-    inp.value = String(q);
-  }
-
-  cardQtyDraft.set(uid, q);
-  updateCardStockLocks();
-}, 120));
-
-
-    // Add to cart -> CartUI (global)
-grid.addEventListener("submit", async (e) => {
-  const form = e.target.closest("[data-cart-form]");
-  if (!form) return;
-  e.preventDefault();
-
-  const fd = new FormData(form);
-  const uid = String(fd.get("id") || "").trim();
-  const qty = Math.max(1, Math.floor(toNumber(fd.get("qty")) || 1));
-  if (!uid) return;
-
-  const info = getStockInfoByUid(uid);
-
-  // stock épuisé
-  if (Number.isFinite(info.stock) && info.remaining <= 0) {
-    if (typeof window.showToast === "function") window.showToast("Stock épuisé.", "warning");
-    updateCardStockLocks();
-    return;
-  }
-
-  // clamp qty au stock restant
-  let qtySafe = qty;
-  if (Number.isFinite(info.stock)) {
-    qtySafe = Math.min(qty, Math.max(1, info.remaining));
-    if (qtySafe !== qty && typeof window.showToast === "function") {
-      window.showToast(`Quantité ajustée au stock disponible (max ${info.remaining}).`, "info");
-    }
-  }
-
-  try {
-    if (CartUI && typeof CartUI.add === "function") {
-      await CartUI.add(uid, qtySafe);
-      if (typeof window.showToast === "function") window.showToast(`Ajouté au panier (x${qtySafe})`, "success");
-    } else {
-      console.warn("[catalogue.js] CartUI.add indisponible");
-    }
-  } catch (err) {
-    console.error(err);
-    if (typeof window.showToast === "function") window.showToast("Erreur lors de l'ajout au panier.", "danger");
-  } finally {
-    updateCardCartBadges(); // appelle updateCardStockLocks()
-  }
-});
-
+    // ✅ récupère réservations pour les produits visibles
+    fetchReserved(collectUidsFromRows(rows));
   }
 
   // -----------------------------
-  // Wire filters inputs
+  // Interactions Qty + add-to-cart
+  // -----------------------------
+  if (grid) {
+    grid.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-action]");
+      if (!btn) return;
+
+      const action = btn.getAttribute("data-action");
+      const uid = btn.getAttribute("data-uid");
+      if (!uid) return;
+
+      const form = btn.closest("form");
+      const input = form?.querySelector(`input[name="qty"][data-uid="${uid}"]`);
+      if (!input || input.disabled) return;
+
+      let q = Math.max(1, Math.floor(toNumber(input.value) || 1));
+
+      if (action === "qty-dec") q = Math.max(1, q - 1);
+
+      if (action === "qty-inc") {
+        const info = getStockInfoByUid(uid);
+        const lim = Number.isFinite(info.stock) ? Math.max(1, info.remaining) : Infinity;
+        q = Math.min(q + 1, lim);
+      }
+
+      input.value = String(q);
+      cardQtyDraft.set(uid, q);
+
+      updateCardStockLocks();
+    });
+
+    grid.addEventListener("input", debounce((e) => {
+      const inp = e.target.closest("[data-action='qty-input']");
+      if (!inp) return;
+
+      const uid = inp.getAttribute("data-uid");
+      if (!uid) return;
+
+      const info = getStockInfoByUid(uid);
+      let q = Math.max(1, Math.floor(toNumber(inp.value) || 1));
+
+      if (Number.isFinite(info.stock)) {
+        q = Math.min(q, Math.max(1, info.remaining));
+        inp.value = String(q);
+      }
+
+      cardQtyDraft.set(uid, q);
+      updateCardStockLocks();
+    }, 120));
+
+    grid.addEventListener("submit", async (e) => {
+      const form = e.target.closest("[data-cart-form]");
+      if (!form) return;
+      e.preventDefault();
+
+      const fd = new FormData(form);
+      const uid = String(fd.get("id") || "").trim();
+      const qty = Math.max(1, Math.floor(toNumber(fd.get("qty")) || 1));
+      if (!uid) return;
+
+      const info = getStockInfoByUid(uid);
+
+      if (Number.isFinite(info.stock) && info.remaining <= 0) {
+        if (typeof window.showToast === "function") window.showToast("Stock épuisé.", "warning");
+        updateCardStockLocks();
+        return;
+      }
+
+      let qtySafe = qty;
+      if (Number.isFinite(info.stock)) {
+        qtySafe = Math.min(qty, Math.max(1, info.remaining));
+        if (qtySafe !== qty && typeof window.showToast === "function") {
+          window.showToast(`Quantité ajustée au stock disponible (max ${info.remaining}).`, "info");
+        }
+      }
+
+      try {
+        if (CartUI && typeof CartUI.add === "function") {
+          await CartUI.add(uid, qtySafe);
+          if (typeof window.showToast === "function") window.showToast(`Ajouté au panier (x${qtySafe})`, "success");
+        } else {
+          console.warn("[catalogue.js] CartUI.add indisponible");
+        }
+      } catch (err) {
+        console.error(err);
+        if (typeof window.showToast === "function") window.showToast("Erreur lors de l'ajout au panier.", "danger");
+      } finally {
+        updateCardCartBadges();
+      }
+    });
+  }
+
+  // -----------------------------
+  // Wire filters
   // -----------------------------
   function wireFilters() {
     const applyDebounced = debounce(applyFilters, 220);
@@ -796,7 +829,6 @@ grid.addEventListener("submit", async (e) => {
       r.addEventListener("change", () => {
         priceMode = document.querySelector('input[name="priceMode"]:checked')?.value || "inc";
         applyFilters();
-        // refresh total/prices in offcanvas if open
         if (CartUI && typeof CartUI.render === "function") CartUI.render();
       });
     });
@@ -868,7 +900,7 @@ grid.addEventListener("submit", async (e) => {
       transformHeader: (h) => stripQuotes(h),
       transform: (v) => stripQuotes(v),
       complete: (results) => {
-        let rows = (results.data || [])
+        const rows = (results.data || [])
           .map((raw) => {
             const out = {};
             for (const k in raw) out[stripQuotes(k)] = stripQuotes(raw[k]);
@@ -908,16 +940,7 @@ grid.addEventListener("submit", async (e) => {
     applyFilters();
     updateCardCartBadges();
 
-    // debug nouveautés
-    if (CFG.pageMode === "new") {
-      const nd = Number.isFinite(+CFG.newDays) ? +CFG.newDays : 5;
-      const nbNew = allRows.filter(isNewRow).length;
-      console.log("[NOUVEAUTES] newDays=", nd, "items=", nbNew, "sur", allRows.length);
-    }
-
-    // -----------------------------
-    // ✅ Resolver prix/labels UNIQUEMENT sur Catalogue
-    // -----------------------------
+    // ✅ Resolver pour le panier offcanvas
     window.CART_RESOLVER = function (uid) {
       const r = allRowsByUid.get(uid);
       if (!r) return { title: uid, subtitle: "ID: " + uid };
@@ -947,15 +970,16 @@ grid.addEventListener("submit", async (e) => {
       };
     };
 
-    // Sync le badge + offcanvas après chargement CSV
     if (CartUI && typeof CartUI.sync === "function") {
       CartUI.sync().catch(() => {});
     }
+
+    // ✅ charge réservations pour visibles (après premier render)
+    setTimeout(() => fetchReserved(collectVisibleUids()), 50);
   }
 
   // -----------------------------
-  // ✅ Total formaté dans le panier (uniquement ici)
-  // On wrap CartUI.render pour formatter le total quand il est affiché.
+  // Total formaté dans le panier (wrap CartUI.render)
   // -----------------------------
   function computeCartTotalFromResolver() {
     const cart = getCartState();
@@ -979,8 +1003,6 @@ grid.addEventListener("submit", async (e) => {
 
   function wrapCartUiRender() {
     if (!CartUI || typeof CartUI.render !== "function") return;
-
-    // éviter double wrap
     if (CartUI.__catalogueWrapped) return;
     CartUI.__catalogueWrapped = true;
 
@@ -989,20 +1011,20 @@ grid.addEventListener("submit", async (e) => {
     CartUI.render = function () {
       originalRender();
 
-      // Update badges sur les cards (quand panier change depuis offcanvas)
+      // Update cards
       updateCardCartBadges();
 
       // Total formaté si visible
       const totalWrap = el("cartTotalWrap");
       const totalEl = el("cartTotal");
       if (!totalWrap || !totalEl) return;
-
       if (totalWrap.classList.contains("d-none")) return;
 
       const r = computeCartTotalFromResolver();
-      if (r.hasAnyPrice) {
-        totalEl.textContent = fmtMoney(r.total);
-      }
+      if (r.hasAnyPrice) totalEl.textContent = fmtMoney(r.total);
+
+      // ✅ refresh réservations (utile si offcanvas modifie le panier)
+      fetchReserved(collectVisibleUids());
     };
   }
 
@@ -1010,34 +1032,29 @@ grid.addEventListener("submit", async (e) => {
   // Init
   // -----------------------------
   function init() {
-    // DOM requis
     if (!grid || !qTop || !btnMore || !el("filtersDesktopMount") || !el("filtersClone")) {
       console.warn("[catalogue.js] DOM catalogue incomplet (vérifie _catalogue.html.twig)");
-      // on continue quand même
     }
 
-    // init priceMode
     priceMode = document.querySelector('input[name="priceMode"]:checked')?.value || "inc";
 
-    // mount filters card between desktop/offcanvas
     mountFiltersResponsive();
     window.addEventListener("resize", debounce(mountFiltersResponsive, 150));
 
-    // wire filters
     wireFilters();
 
-    // more button
     if (btnMore) btnMore.addEventListener("click", () => { page++; renderVisible(); });
 
-    // wrap render for total formatting + card badges refresh
     wrapCartUiRender();
 
-    // sync cart badge quickly
     if (CartUI && typeof CartUI.sync === "function") {
       CartUI.sync().catch(() => {});
     }
 
-    // load CSV
+    // ✅ refresh réservations périodique
+    fetchReserved(collectVisibleUids());
+    setInterval(() => fetchReserved(collectVisibleUids()), 20000);
+
     loadCsv().catch((err) => {
       console.error(err);
       if (hint) hint.textContent = "Impossible de charger le CSV. Vérifie /catalogue/csv.";

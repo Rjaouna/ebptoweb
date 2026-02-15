@@ -2,11 +2,13 @@
 # yaml-language-server: $schema=../vendor/symfony/dependency-injection/Loader/schema/services.schema.json
 
 parameters:
-  # Exemple de param si tu veux en ajouter plus tard
+  catalogue_cache_csv: '%kernel.project_dir%/var/catalogue_cache/items_cache.csv'
   # app.some_param: 'value'
 
 services:
-  # Configuration par défaut pour les services définis ici
+  App\Service\CatalogueCsvService:
+    arguments:
+      $csvPath: '%app.catalogue_csv_path%'
   _defaults:
     autowire: true
     autoconfigure: true
