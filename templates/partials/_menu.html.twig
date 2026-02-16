@@ -35,6 +35,10 @@
      href="{{ path('orders_index') }}">
     <i class="bi bi-receipt me-2"></i>Mes commandes
   </a>
+
+
+ 
+
 </div>
 
 
@@ -83,8 +87,15 @@
                 <li><a class="dropdown-item" href="/admin"><i class="bi bi-speedometer2 me-2"></i>Admin</a></li>
                 <li><a class="dropdown-item" href="/admin/articles"><i class="bi bi-boxes me-2"></i>Articles</a></li>
                 <li><a class="dropdown-item" href="/admin/integrations/ftp"><i class="bi bi-cloud-arrow-up me-2"></i>FTP / CSV</a></li>
+                 <li><a class="dropdown-item" href="{{ path('admin_orders_index') }}">
+  <i class="bi bi-receipt me-2"></i>Commandes (Admin)
+</a></li>
               {% endif %}
-
+{% if app.environment == 'dev' and is_granted('IS_AUTHENTICATED_FULLY') %}
+          <a class="topbar-link" id="btnDevResetDb" type="button">
+            vider
+          </a>
+        {% endif %}
               <li><hr class="dropdown-divider"></li>
               <li>
                 <a class="dropdown-item text-danger" href="/logout">
@@ -101,11 +112,7 @@
           </a>
         {% endif %}
 
-        {% if app.environment == 'dev' and is_granted('IS_AUTHENTICATED_FULLY') %}
-          <button class="btn btn-danger btn-sm rounded-pill ms-2" id="btnDevResetDb" type="button">
-            <i class="bi bi-trash3 me-1"></i>
-          </button>
-        {% endif %}
+      
       </div>
 
       {# Mobile: only burger (opens mega offcanvas) #}
@@ -158,6 +165,7 @@
       <a class="app-mega-link {{ route == 'catalogue_new' ? 'active' : '' }}" href="{{ path('catalogue_new') }}">
         <i class="bi bi-stars"></i><span>Nouveautés</span>
       </a>
+      
 
       {% if app.user %}
         <a class="app-mega-link {{ route starts with 'orders_' ? 'active' : '' }}" href="{{ path('orders_index') }}">

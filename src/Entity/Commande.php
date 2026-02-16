@@ -272,4 +272,50 @@ class Commande
 
         return $this;
     }
+
+    // App\Entity\Commande.php
+
+public static function nextStatusMap(): array
+{
+    return [
+        self::STATUS_RESERVED  => self::STATUS_PREPARING,
+        self::STATUS_PREPARING => self::STATUS_READY,
+        self::STATUS_READY     => self::STATUS_SHIPPED,
+        self::STATUS_SHIPPED   => self::STATUS_DELIVERED, // optionnel
+        self::STATUS_DELIVERED => null,
+        self::STATUS_CANCELLED => null,
+    ];
+}
+
+public static function label(string $status): string
+{
+    return match ($status) {
+        self::STATUS_RESERVED  => 'Reçue',
+        self::STATUS_PREPARING => 'En préparation',
+        self::STATUS_READY     => 'Terminée',
+        self::STATUS_SHIPPED   => 'Expédiée',
+        self::STATUS_DELIVERED => 'Livrée',
+        self::STATUS_CANCELLED => 'Annulée',
+        default => $status,
+    };
+}
+
+/** Statuts autorisés depuis l’état courant (no skip, no back) */
+public function getAllowedNextStatuses(): array
+{
+    $cur = (string) $this->getStatus();
+    $map = self::nextStatusMap();
+
+    $next = $map[$cur] ?? null;
+    $out = [];
+    if ($next) $out[] = $next;
+
+    // Optionnel: permettre ANNULER seulement tant que pas expédiée
+    if (in_array($cur, [self::STATUS_RESERVED, self::STATUS_PREPARING, self::STATUS_READY], true)) {
+        $out[] = self::STATUS_CANCELLED;
+    }
+
+    return $out;
+}
+
 }
