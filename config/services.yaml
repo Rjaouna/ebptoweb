@@ -4,6 +4,7 @@
 parameters:
   catalogue_cache_csv: '%kernel.project_dir%/var/catalogue_cache/items_cache.csv'
   # app.some_param: 'value'
+  app.mail_from: '%env(APP_MAIL_FROM)%'
 
 services:
   App\Service\CatalogueCsvService:
@@ -15,6 +16,9 @@ services:
     bind:
       # Injecte APP_SECRET automatiquement dans tout argument nommé $appSecret
       $appSecret: '%env(APP_SECRET)%'
+  App\Service\CommandeStatusMailer:
+    arguments:
+      $fromEmail: '%app.mail_from%'
 
   # Rend toutes les classes de src/ disponibles comme services
   App\:

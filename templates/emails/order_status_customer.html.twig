@@ -1,0 +1,23 @@
+<!doctype html>
+<html>
+  <body style="font-family:Arial, sans-serif; line-height:1.5; color:#111;">
+    <h2 style="margin:0 0 8px;">Mise à jour de votre commande</h2>
+
+    <p style="margin:0 0 10px;">
+      Bonjour{% if order.customerName %} {{ order.customerName }}{% endif %},
+      <br>
+      Votre commande <b>{{ ref }}</b> est maintenant au statut :
+      <b>{{ statusLabel }}</b>.
+    </p>
+
+    <p style="margin:0 0 10px;">
+      <b>Total TTC :</b> {{ order.totalTtc is not null ? order.totalTtc|number_format(2, ',', ' ') ~ ' MAD' : '—' }}<br>
+      <b>Date :</b> {{ order.createdAt ? order.createdAt|date('d/m/Y H:i') : '—' }}
+    </p>
+
+    <p style="margin:16px 0 0; color:#555;">
+      Merci.<br>
+      {% if store and store.name %}{{ store.name }}{% else %}La boutique{% endif %}
+    </p>
+  </body>
+</html>

@@ -1,0 +1,41 @@
+<!doctype html>
+<html>
+  <body style="font-family:Arial, sans-serif; line-height:1.5; color:#111;">
+    <h2 style="margin:0 0 8px;">Changement de statut — Commande {{ ref }}</h2>
+
+    <p style="margin:0 0 10px;">
+      <b>Nouveau statut :</b> {{ statusLabel }} ({{ newStatus }})<br>
+      {% if oldStatus %}<b>Ancien :</b> {{ oldStatus }}<br>{% endif %}
+    </p>
+
+    <p style="margin:0 0 10px;">
+      <b>Client :</b>
+      {{ order.customerName ?: 'Utilisateur' }}
+      {% if order.user and order.user.email %} — {{ order.user.email }}{% endif %}<br>
+      <b>Total TTC :</b> {{ order.totalTtc is not null ? order.totalTtc|number_format(2, ',', ' ') ~ ' MAD' : '—' }}<br>
+      <b>Nb lignes :</b> {{ order.commandeLignes ? order.commandeLignes|length : 0 }}
+    </p>
+
+    {% if order.commandeLignes and order.commandeLignes|length %}
+      <h3 style="margin:16px 0 6px;">Articles</h3>
+      <table cellpadding="6" cellspacing="0" border="1" style="border-collapse:collapse; width:100%; font-size:14px;">
+        <thead>
+          <tr>
+            <th align="left">ID</th>
+            <th align="left">Nom</th>
+            <th align="left">Qté</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for l in order.commandeLignes %}
+            <tr>
+              <td>{{ l.id }}</td>
+              <td>{{ l.name ?: '-' }}</td>
+              <td>{{ l.quantity ?: 0 }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% endif %}
+  </body>
+</html>
