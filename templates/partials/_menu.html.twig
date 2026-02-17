@@ -129,10 +129,17 @@
                   <div class="small text-uppercase text-muted fw-semibold" style="letter-spacing:.08em;">Administration</div>
                 </li>
                 <li>
+  <a class="dropdown-item" href="{{ path('admin_store_index') }}">
+    <i class="bi bi-shop me-2"></i>Boutique (Store)
+  </a>
+</li>
+
+                <li>
                   <a class="dropdown-item" href="{{ path('admin_orders_index') }}">
                     <i class="bi bi-receipt-cutoff me-2"></i>Gestion commandes
                   </a>
                 </li>
+                
                 <li>
                   <a class="dropdown-item" href="/admin/integrations/ftp">
                     <i class="bi bi-cloud-arrow-up me-2"></i>FTP / CSV
