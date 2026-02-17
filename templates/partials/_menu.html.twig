@@ -1,7 +1,16 @@
 {# templates/partials/_menu.html.twig #}
 {% set route = app.request.attributes.get('_route') %}
-{% set userEmail = app.user ? (app.user.email|default('Compte')) : '' %}
-{% set userInitial = userEmail ? userEmail|slice(0,1)|upper : 'U' %}
+
+{# User identity display (fallbacks) #}
+{% set userEmail = app.user ? (app.user.email|default('')) : '' %}
+{% set userName = (app.user and attribute(app.user, 'customerName') is defined and app.user.customerName) ? app.user.customerName : 'Utilisateur' %}
+{% set userInitial = (userName ?: (userEmail ?: 'U'))|slice(0,1)|upper %}
+
+{# Roles #}
+{% set isLogged = app.user is not null %}
+{% set isAdmin = is_granted('ROLE_ADMIN') %}
+{% set isPrepa = is_granted('ROLE_PREPA') %}
+{% set isUser = is_granted('ROLE_USER') or isLogged %}
 
 <header class="sticky-top">
   <nav class="navbar navbar-expand-lg app-navbar border-bottom">
@@ -14,39 +23,45 @@
         </span>
       </a>
 
-    {# Desktop nav (centre, discret) #}
-<div class="d-none d-lg-flex align-items-center gap-3 app-center-nav">
-  <a class="app-link {{ route == 'app_home' ? 'active' : '' }}"
-     href="{{ path('app_home') }}">
-    <i class="bi bi-house-door me-2"></i>Accueil
-  </a>
+      {# Desktop nav (centre) #}
+      <div class="d-none d-lg-flex align-items-center gap-3 app-center-nav">
+        <a class="app-link {{ route == 'app_home' ? 'active' : '' }}" href="{{ path('app_home') }}">
+          <i class="bi bi-house-door me-2"></i>Accueil
+        </a>
 
-  <a class="app-link {{ route starts with 'catalogue_' or route == 'catalogue_index' ? 'active' : '' }}"
-     href="{{ path('catalogue_index') }}">
-    <i class="bi bi-grid-3x3-gap me-2"></i>Catalogue
-  </a>
+        <a class="app-link {{ route starts with 'catalogue_' or route == 'catalogue_index' ? 'active' : '' }}"
+           href="{{ path('catalogue_index') }}">
+          <i class="bi bi-grid-3x3-gap me-2"></i>Catalogue
+        </a>
 
-  <a class="app-link {{ route == 'catalogue_new' ? 'active' : '' }}"
-     href="{{ path('catalogue_new') }}">
-    <i class="bi bi-stars me-2"></i>Nouveautés
-  </a>
+        <a class="app-link {{ route == 'catalogue_new' ? 'active' : '' }}" href="{{ path('catalogue_new') }}">
+          <i class="bi bi-stars me-2"></i>Nouveautés
+        </a>
 
-  <a class="app-link {{ route starts with 'orders_' ? 'active' : '' }}"
-     href="{{ path('orders_index') }}">
-    <i class="bi bi-receipt me-2"></i>Mes commandes
-  </a>
+        {% if isLogged %}
+          <a class="app-link {{ route starts with 'orders_' ? 'active' : '' }}" href="{{ path('orders_index') }}">
+            <i class="bi bi-receipt me-2"></i>Mes commandes
+          </a>
+        {% endif %}
 
+        {% if isPrepa or isAdmin %}
+          <a class="app-link {{ route starts with 'prepa_picking' ? 'active' : '' }}" href="{{ path('prepa_picking_index') }}">
+            <i class="bi bi-clipboard-check me-2"></i>Picking
+          </a>
+        {% endif %}
 
- 
-
-</div>
-
+        {% if isAdmin %}
+          <a class="app-link {{ route starts with 'admin_orders' ? 'active' : '' }}" href="{{ path('admin_orders_index') }}">
+            <i class="bi bi-receipt-cutoff me-2"></i>Commandes (Admin)
+          </a>
+        {% endif %}
+      </div>
 
       {# Right actions (desktop) #}
       <div class="ms-auto d-none d-lg-flex align-items-center gap-2">
+        {% if isLogged %}
 
-        {% if app.user %}
-          {# Panier : offcanvas sur Catalogue sinon lien normal #}
+          {# Panier (offcanvas on catalogue only) #}
           <a id="cartBtn" href="{{ path('cart_index') }}"
              class="btn btn-outline-secondary rounded-pill position-relative px-3">
             <i class="bi bi-cart3"></i>
@@ -57,7 +72,7 @@
             </span>
           </a>
 
-          {# Compte dropdown minimal #}
+          {# Account dropdown #}
           <div class="dropdown">
             <button class="btn btn-light app-avatar-btn rounded-pill px-2"
                     type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Compte">
@@ -65,12 +80,24 @@
             </button>
 
             <ul class="dropdown-menu dropdown-menu-end app-dropdown">
-              <li class="px-3 py-2">
-                <div class="small text-secondary">Connecté en</div>
-                <div class="fw-semibold text-truncate" style="max-width:260px;">{{ userEmail }}</div>
+              <li class="px-3 pt-3 pb-2">
+                <div class="d-flex align-items-center gap-2">
+                  <div class="app-avatar-lg">{{ userInitial }}</div>
+                  <div class="min-w-0">
+                    <div class="fw-black text-truncate" style="max-width:260px;">{{ userName }}</div>
+                    <div class="small text-muted text-truncate" style="max-width:260px;">
+                      <i class="bi bi-envelope me-1"></i>{{ userEmail ?: '—' }}
+                    </div>
+                  </div>
+                </div>
               </li>
+
               <li><hr class="dropdown-divider"></li>
 
+              {# Client #}
+              <li class="px-3 py-1">
+                <div class="small text-uppercase text-muted fw-semibold" style="letter-spacing:.08em;">Espace client</div>
+              </li>
               <li>
                 <a class="dropdown-item" href="{{ path('orders_index') }}">
                   <i class="bi bi-receipt me-2"></i>Mes commandes
@@ -82,20 +109,45 @@
                 </a>
               </li>
 
-              {% if is_granted('ROLE_ADMIN') %}
+              {# Préparation #}
+              {% if isPrepa or isAdmin %}
                 <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item" href="/admin"><i class="bi bi-speedometer2 me-2"></i>Admin</a></li>
-                <li><a class="dropdown-item" href="/admin/articles"><i class="bi bi-boxes me-2"></i>Articles</a></li>
-                <li><a class="dropdown-item" href="/admin/integrations/ftp"><i class="bi bi-cloud-arrow-up me-2"></i>FTP / CSV</a></li>
-                 <li><a class="dropdown-item" href="{{ path('admin_orders_index') }}">
-  <i class="bi bi-receipt me-2"></i>Commandes (Admin)
-</a></li>
+                <li class="px-3 py-1">
+                  <div class="small text-uppercase text-muted fw-semibold" style="letter-spacing:.08em;">Préparation</div>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{{ path('prepa_picking_index') }}">
+                    <i class="bi bi-clipboard-check me-2"></i>Picking
+                  </a>
+                </li>
               {% endif %}
-{% if app.environment == 'dev' and is_granted('IS_AUTHENTICATED_FULLY') %}
-          <a class="topbar-link" id="btnDevResetDb" type="button">
-            vider
-          </a>
-        {% endif %}
+
+              {# Admin #}
+              {% if isAdmin %}
+                <li><hr class="dropdown-divider"></li>
+                <li class="px-3 py-1">
+                  <div class="small text-uppercase text-muted fw-semibold" style="letter-spacing:.08em;">Administration</div>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{{ path('admin_orders_index') }}">
+                    <i class="bi bi-receipt-cutoff me-2"></i>Gestion commandes
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="/admin/integrations/ftp">
+                    <i class="bi bi-cloud-arrow-up me-2"></i>FTP / CSV
+                  </a>
+                </li>
+
+                {% if app.environment == 'dev' and is_granted('IS_AUTHENTICATED_FULLY') %}
+                  <li>
+                    <button class="dropdown-item text-danger" id="btnDevResetDb" type="button">
+                      <i class="bi bi-trash3 me-2"></i>Vider la base
+                    </button>
+                  </li>
+                {% endif %}
+              {% endif %}
+
               <li><hr class="dropdown-divider"></li>
               <li>
                 <a class="dropdown-item text-danger" href="/logout">
@@ -111,11 +163,9 @@
             <span class="ms-2 fw-semibold">Se connecter</span>
           </a>
         {% endif %}
-
-      
       </div>
 
-      {# Mobile: only burger (opens mega offcanvas) #}
+      {# Mobile burger #}
       <div class="ms-auto d-flex d-lg-none align-items-center">
         <button class="btn btn-light rounded-pill px-3 app-burger"
                 type="button"
@@ -142,7 +192,7 @@
       </span>
       <div class="lh-sm">
         <div class="fw-black" id="mobileMegaLabel">Menu</div>
-        <div class="text-muted small">Commande, panier & compte</div>
+        <div class="text-muted small">Navigation & compte</div>
       </div>
     </div>
     <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Fermer"></button>
@@ -150,62 +200,48 @@
 
   <div class="offcanvas-body app-mega-body">
 
-
-    {# Primary nav #}
-    <div class="app-section-title">Navigation</div>
-    <div class="d-grid gap-2 mb-3">
-      <a class="app-mega-link {{ route == 'app_home' ? 'active' : '' }}" href="{{ path('app_home') }}">
-        <i class="bi bi-house-door"></i><span>Accueil</span>
-      </a>
-
-      <a class="app-mega-link {{  route == 'catalogue_index' ? 'active' : '' }}" href="{{ path('catalogue_index') }}">
-        <i class="bi bi-grid-3x3-gap"></i><span>Catalogue</span>
-      </a>
-
-      <a class="app-mega-link {{ route == 'catalogue_new' ? 'active' : '' }}" href="{{ path('catalogue_new') }}">
-        <i class="bi bi-stars"></i><span>Nouveautés</span>
-      </a>
-      
-
-      {% if app.user %}
-        <a class="app-mega-link {{ route starts with 'orders_' ? 'active' : '' }}" href="{{ path('orders_index') }}">
-          <i class="bi bi-receipt"></i><span>Mes commandes</span>
-        </a>
-
-        <a class="app-mega-link {{ route starts with 'cart_' ? 'active' : '' }}" href="{{ path('cart_index') }}">
-          <i class="bi bi-cart3"></i><span>Mon panier</span>
-        </a>
-      {% endif %}
-    </div>
-
-    {# Account block #}
+    {# Account #}
     <div class="app-section-title">Compte</div>
     <div class="app-account card border-0 rounded-4 mb-3">
       <div class="card-body p-3">
-        {% if app.user %}
+        {% if isLogged %}
           <div class="d-flex align-items-center gap-2">
             <div class="app-avatar-lg">{{ userInitial }}</div>
             <div class="min-w-0">
-              <div class="fw-semibold text-truncate">{{ userEmail }}</div>
-              <div class="small text-muted">Espace client</div>
+              <div class="fw-black text-truncate">{{ userName }}</div>
+              <div class="small text-muted text-truncate">
+                <i class="bi bi-envelope me-1"></i>{{ userEmail ?: '—' }}
+              </div>
             </div>
           </div>
 
           <div class="d-grid gap-2 mt-3">
             <a class="btn btn-outline-secondary rounded-pill" href="{{ path('orders_index') }}">
-              <i class="bi bi-receipt me-2"></i>Voir mes commandes
+              <i class="bi bi-receipt me-2"></i>Mes commandes
             </a>
             <a class="btn btn-outline-secondary rounded-pill" href="{{ path('cart_index') }}">
-              <i class="bi bi-cart3 me-2"></i>Voir mon panier
+              <i class="bi bi-cart3 me-2"></i>Mon panier
             </a>
 
-            {% if is_granted('ROLE_ADMIN') %}
-              <a class="btn btn-outline-secondary rounded-pill" href="/admin">
-                <i class="bi bi-speedometer2 me-2"></i>Admin
+            {% if isPrepa or isAdmin %}
+              <a class="btn btn-outline-secondary rounded-pill" href="{{ path('prepa_picking_index') }}">
+                <i class="bi bi-clipboard-check me-2"></i>Picking
+              </a>
+            {% endif %}
+
+            {% if isAdmin %}
+              <a class="btn btn-outline-secondary rounded-pill" href="{{ path('admin_orders_index') }}">
+                <i class="bi bi-receipt-cutoff me-2"></i>Gestion commandes
               </a>
               <a class="btn btn-outline-secondary rounded-pill" href="/admin/integrations/ftp">
                 <i class="bi bi-cloud-arrow-up me-2"></i>FTP / CSV
               </a>
+
+              {% if app.environment == 'dev' and is_granted('IS_AUTHENTICATED_FULLY') %}
+                <button class="btn btn-danger rounded-pill" id="btnDevResetDbMobile" type="button">
+                  <i class="bi bi-trash3 me-2"></i>Vider la base
+                </button>
+              {% endif %}
             {% endif %}
 
             <a class="btn btn-danger rounded-pill" href="/logout">
@@ -223,7 +259,45 @@
       </div>
     </div>
 
-    {# Social / contact quick links #}
+    {# Navigation #}
+    <div class="app-section-title">Navigation</div>
+    <div class="d-grid gap-2 mb-3">
+      <a class="app-mega-link {{ route == 'app_home' ? 'active' : '' }}" href="{{ path('app_home') }}">
+        <i class="bi bi-house-door"></i><span>Accueil</span>
+      </a>
+      <a class="app-mega-link {{ route starts with 'catalogue_' or route == 'catalogue_index' ? 'active' : '' }}" href="{{ path('catalogue_index') }}">
+        <i class="bi bi-grid-3x3-gap"></i><span>Catalogue</span>
+      </a>
+      <a class="app-mega-link {{ route == 'catalogue_new' ? 'active' : '' }}" href="{{ path('catalogue_new') }}">
+        <i class="bi bi-stars"></i><span>Nouveautés</span>
+      </a>
+
+      {% if isLogged %}
+        <a class="app-mega-link {{ route starts with 'orders_' ? 'active' : '' }}" href="{{ path('orders_index') }}">
+          <i class="bi bi-receipt"></i><span>Mes commandes</span>
+        </a>
+        <a class="app-mega-link {{ route starts with 'cart_' ? 'active' : '' }}" href="{{ path('cart_index') }}">
+          <i class="bi bi-cart3"></i><span>Mon panier</span>
+        </a>
+      {% endif %}
+
+      {% if isPrepa or isAdmin %}
+        <a class="app-mega-link {{ route starts with 'prepa_picking' ? 'active' : '' }}" href="{{ path('prepa_picking_index') }}">
+          <i class="bi bi-clipboard-check"></i><span>Picking</span>
+        </a>
+      {% endif %}
+
+      {% if isAdmin %}
+        <a class="app-mega-link {{ route starts with 'admin_orders' ? 'active' : '' }}" href="{{ path('admin_orders_index') }}">
+          <i class="bi bi-receipt-cutoff"></i><span>Commandes (Admin)</span>
+        </a>
+        <a class="app-mega-link" href="/admin/integrations/ftp">
+          <i class="bi bi-cloud-arrow-up"></i><span>FTP / CSV</span>
+        </a>
+      {% endif %}
+    </div>
+
+    {# Social #}
     <div class="app-section-title">Réseaux</div>
     <div class="d-flex gap-2 flex-wrap">
       <a class="app-social" href="#" target="_blank" rel="noopener nofollow" aria-label="Facebook"><i class="bi bi-facebook"></i></a>
@@ -231,20 +305,12 @@
       <a class="app-social" href="#" target="_blank" rel="noopener nofollow" aria-label="Google"><i class="bi bi-google"></i></a>
     </div>
 
-    {% if app.environment == 'dev' and is_granted('IS_AUTHENTICATED_FULLY') %}
-      <hr class="my-3">
-      <button class="btn btn-danger w-100 rounded-pill" id="btnDevResetDbMobile" type="button">
-        <i class="bi bi-trash3 me-2"></i>
-      </button>
-    {% endif %}
-
   </div>
 </div>
 
 <style>
   .fw-black{ font-weight: 900; }
 
-  /* Navbar glass */
   .app-navbar{
     background: rgba(255,255,255,.86) !important;
     backdrop-filter: blur(14px);
@@ -252,7 +318,6 @@
     border-bottom: 1px solid rgba(15,23,42,.08) !important;
   }
 
-  /* Brand */
   .brand-logo{
     width: 145px;
     height: 70px;
@@ -268,7 +333,6 @@
     padding: 6px;
   }
 
-  /* Center desktop nav */
   .app-center-nav{
     position: absolute;
     left: 50%;
@@ -281,7 +345,6 @@
     z-index: 2;
   }
 
-  /* Desktop links: discreet, pro */
   .app-link{
     text-decoration: none;
     color: rgba(47,52,59,.92);
@@ -291,12 +354,11 @@
     position: relative;
     transition: color .15s ease, opacity .15s ease;
     opacity: .92;
+    white-space: nowrap;
   }
   .app-link:hover{ color: var(--bs-primary); opacity: 1; }
   .app-link.active{ color: var(--bs-primary); opacity: 1; }
- 
 
-  /* Avatar */
   .app-avatar-btn{
     border: 1px solid rgba(0,0,0,.08);
     transition: transform .18s ease, box-shadow .18s ease;
@@ -317,19 +379,30 @@
   }
 
   .app-dropdown{
-    border-radius: 16px;
+    border-radius: 18px;
     border: 1px solid rgba(0,0,0,.06);
     box-shadow: 0 18px 40px rgba(0,0,0,.12);
-    padding: .5rem;
-    min-width: 290px;
+    padding: .4rem;
+    min-width: 320px;
   }
   .app-dropdown .dropdown-item{
-    border-radius: 12px;
-    padding: .62rem .75rem;
+    border-radius: 14px;
+    padding: .66rem .8rem;
+    font-weight: 700;
   }
   .app-dropdown .dropdown-item i{ width:20px; display:inline-block; }
 
-  /* Badge panier */
+  .app-avatar-lg{
+    width:44px;height:44px;
+    border-radius: 999px;
+    display:grid;place-items:center;
+    font-weight: 900;
+    background: rgba(var(--bs-primary-rgb), .12);
+    color: var(--bs-primary);
+    border: 1px solid rgba(var(--bs-primary-rgb), .18);
+    flex: 0 0 auto;
+  }
+
   #cartBadge{
     min-width: 22px;
     height: 22px;
@@ -340,13 +413,11 @@
     border: 2px solid rgba(255,255,255,.95);
   }
 
-  /* Mobile burger */
   .app-burger{
     border: 1px solid rgba(0,0,0,.08);
     background: rgba(255,255,255,.82);
   }
 
-  /* Mega offcanvas */
   .app-mega{ --bs-offcanvas-width: min(92vw, 420px); }
   .app-mega-head{
     background: rgba(255,255,255,.92);
@@ -384,19 +455,10 @@
     margin: .25rem 0 .6rem;
   }
 
-  .app-info{
+  .app-account{
     background: rgba(255,255,255,.86);
     border: 1px solid rgba(15,23,42,.08);
     box-shadow: 0 14px 30px rgba(2,6,23,.08);
-  }
-  .app-info-ico{
-    width:36px;height:36px;
-    border-radius: 999px;
-    display:grid;place-items:center;
-    background: rgba(var(--bs-primary-rgb), .10);
-    border: 1px solid rgba(var(--bs-primary-rgb), .18);
-    color: var(--bs-primary);
-    flex: 0 0 auto;
   }
 
   .app-mega-link{
@@ -425,22 +487,6 @@
   }
   .app-mega-link.active i{ color: var(--bs-primary); }
 
-  .app-account{
-    background: rgba(255,255,255,.86);
-    border: 1px solid rgba(15,23,42,.08);
-    box-shadow: 0 14px 30px rgba(2,6,23,.08);
-  }
-  .app-avatar-lg{
-    width:44px;height:44px;
-    border-radius: 999px;
-    display:grid;place-items:center;
-    font-weight: 900;
-    background: rgba(var(--bs-primary-rgb), .12);
-    color: var(--bs-primary);
-    border: 1px solid rgba(var(--bs-primary-rgb), .18);
-    flex: 0 0 auto;
-  }
-
   .app-social{
     width: 42px;
     height: 42px;
@@ -468,7 +514,7 @@
     if (!btn) return;
 
     btn.addEventListener("click", (e) => {
-      // sur catalogue : ouvrir offcanvas
+      // Sur catalogue: ouvrir offcanvas (si CartCanvas existe)
       if (window.CATALOG_CONFIG) {
         const cartCanvas = document.getElementById("cartCanvas");
         if (!cartCanvas) return;
@@ -487,8 +533,8 @@
   });
 </script>
 
-{# ✅ DEV reset DB (desktop + mobile) #}
-{% if app.environment == 'dev' and is_granted('IS_AUTHENTICATED_FULLY') %}
+{# ✅ DEV reset DB (desktop + mobile) : admin only #}
+{% if isAdmin and app.environment == 'dev' and is_granted('IS_AUTHENTICATED_FULLY') %}
 <script>
   (function(){
     const endpoint = "{{ path('dev_reset_db') }}";

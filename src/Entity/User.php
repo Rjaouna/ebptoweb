@@ -125,6 +125,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(targetEntity: Commande::class, mappedBy: 'user')]
     private Collection $commandes;
 
+    #[ORM\Column(length: 50, nullable: true)]
+    private ?string $customerName = null;
+
     public function __construct()
     {
         $this->commandes = new ArrayCollection();
@@ -167,6 +170,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
                 $commande->setUser(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getCustomerName(): ?string
+    {
+        return $this->customerName;
+    }
+
+    public function setCustomerName(?string $customerName): static
+    {
+        $this->customerName = $customerName;
 
         return $this;
     }
