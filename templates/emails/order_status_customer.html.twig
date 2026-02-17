@@ -1,23 +1,37 @@
 <!doctype html>
 <html>
-  <body style="font-family:Arial, sans-serif; line-height:1.5; color:#111;">
-    <h2 style="margin:0 0 8px;">Mise à jour de votre commande</h2>
+  <body style="font-family: Arial, sans-serif; background:#f6f7fb; padding:24px;">
+    <div style="max-width:640px;margin:0 auto;background:#fff;border-radius:16px;padding:18px;border:1px solid rgba(0,0,0,.06)">
+      <h2 style="margin:0 0 8px 0;">Mise à jour de votre commande</h2>
+      <p style="margin:0 0 12px 0;color:#6b7280;">
+        Bonjour {{ customerName }}, le statut de votre commande a changé.
+      </p>
 
-    <p style="margin:0 0 10px;">
-      Bonjour{% if order.customerName %} {{ order.customerName }}{% endif %},
-      <br>
-      Votre commande <b>{{ ref }}</b> est maintenant au statut :
-      <b>{{ statusLabel }}</b>.
-    </p>
+      <div style="border-radius:14px;padding:14px;background:rgba(13,110,253,.06);border:1px solid rgba(13,110,253,.12)">
+        <p style="margin:0 0 6px 0;">Référence : <b>{{ ref }}</b></p>
+        <p style="margin:0 0 6px 0;">Nouveau statut : <b>{{ statusLabel }}</b></p>
+        {% if oldStatusLabel %}
+          <p style="margin:0;color:#6b7280;">Ancien statut : <b>{{ oldStatusLabel }}</b></p>
+        {% endif %}
+      </div>
 
-    <p style="margin:0 0 10px;">
-      <b>Total TTC :</b> {{ order.totalTtc is not null ? order.totalTtc|number_format(2, ',', ' ') ~ ' MAD' : '—' }}<br>
-      <b>Date :</b> {{ order.createdAt ? order.createdAt|date('d/m/Y H:i') : '—' }}
-    </p>
+      <div style="display:flex;gap:12px;margin-top:12px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:180px;border:1px solid rgba(0,0,0,.06);border-radius:14px;padding:12px">
+          <div style="color:#6b7280;font-size:13px;">Articles</div>
+          <div style="font-weight:800;font-size:18px;">{{ itemsCount }}</div>
+        </div>
 
-    <p style="margin:16px 0 0; color:#555;">
-      Merci.<br>
-      {% if store and store.name %}{{ store.name }}{% else %}La boutique{% endif %}
-    </p>
+        <div style="flex:1;min-width:180px;border:1px solid rgba(0,0,0,.06);border-radius:14px;padding:12px">
+          <div style="color:#6b7280;font-size:13px;">Total TTC</div>
+          <div style="font-weight:800;font-size:18px;">
+            {{ totalTtc is not null ? (totalTtc|number_format(2, ',', ' ') ~ ' ' ~ currency) : '—' }}
+          </div>
+        </div>
+      </div>
+
+      <p style="margin:14px 0 0 0;color:#6b7280;font-size:12px;">
+        Ceci est un email automatique.
+      </p>
+    </div>
   </body>
 </html>

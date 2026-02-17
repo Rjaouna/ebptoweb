@@ -16,10 +16,15 @@ services:
     bind:
       # Injecte APP_SECRET automatiquement dans tout argument nommé $appSecret
       $appSecret: '%env(APP_SECRET)%'
-  App\Service\CommandeStatusMailer:
-    arguments:
-      $fromEmail: '%app.mail_from%'
-
+  App\Doctrine\Listener\CommandeEmailListener:
+      arguments:
+        $fromEmail: '%env(MAIL_FROM)%'
+        $fromName: '%env(MAIL_FROM_NAME)%'
+        $storeEmail: '%env(STORE_EMAIL)%'
+      tags:
+        - { name: doctrine.event_listener, event: postPersist }
+        - { name: doctrine.event_listener, event: preUpdate }
+        - { name: doctrine.event_listener, event: postFlush }
   # Rend toutes les classes de src/ disponibles comme services
   App\:
     resource: '../src/'

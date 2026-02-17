@@ -2,16 +2,12 @@
 <html>
   <body style="font-family: Arial, sans-serif; background:#f6f7fb; padding:24px;">
     <div style="max-width:640px;margin:0 auto;background:#fff;border-radius:16px;padding:18px;border:1px solid rgba(0,0,0,.06)">
-      <h2 style="margin:0 0 8px 0;">Changement de statut (STORE)</h2>
-      <p style="margin:0 0 12px 0;color:#6b7280;">Une commande vient d’être mise à jour.</p>
+      <h2 style="margin:0 0 8px 0;">Commande reçue ✅</h2>
+      <p style="margin:0 0 12px 0;color:#6b7280;">Merci {{ customerName }}. Votre commande a bien été enregistrée.</p>
 
-      <div style="border-radius:14px;padding:14px;background:rgba(255,193,7,.10);border:1px solid rgba(255,193,7,.18)">
+      <div style="border-radius:14px;padding:14px;background:rgba(13,110,253,.06);border:1px solid rgba(13,110,253,.12)">
         <p style="margin:0 0 6px 0;">Référence : <b>{{ ref }}</b></p>
-        <p style="margin:0 0 6px 0;">Client : <b>{{ customerName }}</b></p>
-        <p style="margin:0 0 6px 0;">Nouveau statut : <b>{{ statusLabel }}</b></p>
-        {% if oldStatusLabel %}
-          <p style="margin:0;color:#6b7280;">Ancien statut : <b>{{ oldStatusLabel }}</b></p>
-        {% endif %}
+        <p style="margin:0;">Statut : <b>{{ statusLabel }}</b></p>
       </div>
 
       <div style="display:flex;gap:12px;margin-top:12px;flex-wrap:wrap;">
@@ -29,7 +25,7 @@
       </div>
 
       <p style="margin:14px 0 0 0;color:#6b7280;font-size:12px;">
-        Notification interne (STORE).
+        Ceci est un email automatique.
       </p>
     </div>
   </body>
