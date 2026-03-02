@@ -1,0 +1,22 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+<div class="container py-4">
+  <h3>Source CSV</h3>
+
+  {% if message is not null %}
+    <div class="alert {{ ok ? 'alert-success' : 'alert-danger' }}">{{ message }}</div>
+  {% endif %}
+
+  {{ form_start(form) }}
+    <div class="card p-3">
+      {{ form_row(form.csvUrl) }}
+      <button class="btn btn-primary">Enregistrer & Mettre à jour</button>
+    </div>
+  {{ form_end(form) }}
+
+  <div class="mt-3 small text-muted">
+    Cache local: <code>{{ cachePath }}</code>
+  </div>
+</div>
+{% endblock %}

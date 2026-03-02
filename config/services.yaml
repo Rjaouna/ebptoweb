@@ -7,9 +7,10 @@ parameters:
   app.mail_from: '%env(APP_MAIL_FROM)%'
 
 services:
-  App\Service\CatalogueCsvService:
+  App\Service\CsvCatalogueCache:
     arguments:
-      $csvPath: '%app.catalogue_csv_path%'
+      $projectDir: '%kernel.project_dir%'
+  
   _defaults:
     autowire: true
     autoconfigure: true
