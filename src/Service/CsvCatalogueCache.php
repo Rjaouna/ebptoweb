@@ -95,71 +95,91 @@ final class CsvCatalogueCache
     /**
      * Télécharge le CSV depuis une URL et l’écrit dans var/catalogue_cache/items_cache.csv
      */
-    public function updateCacheFromUrl(string $url, int $timeoutSeconds = 20): void
-    {
-        $this->ensureDir();
-        $this->assertUrlAllowed($url);
+   public function updateCacheFromUrl(string $url, int $timeoutSeconds = 20): void
+{
+    $this->ensureDir();
+    $this->assertUrlAllowed($url);
 
-        $status = $this->getStatus();
-        $status['last_try_at'] = (new \DateTimeImmutable())->format('Y-m-d H:i:s');
-        $status['source'] = $url;
+    $status = $this->getStatus();
+    $status['last_try_at'] = (new \DateTimeImmutable())->format('Y-m-d H:i:s');
+    $status['source'] = $url;
 
-        try {
-            $response = $this->httpClient->request('GET', $url, [
-    'timeout' => $timeoutSeconds,
-    'max_redirects' => 3,
-    'headers' => [
-        'Accept' => 'text/csv, text/plain, */*',
-        'User-Agent' => 'HopicCatalogue/1.0',
-    ],
-    'extra' => [
-        'curl' => [
-            \CURLOPT_IPRESOLVE => \CURL_IPRESOLVE_V4, // OK ✅
-            // ⚠️ ne pas mettre CURLOPT_CONNECTTIMEOUT (interdit)
-        ],
-    ],
-]);
+    $tmp = $this->getCachePath() . '.tmp';
 
-            $httpCode = $response->getStatusCode();
-            if ($httpCode !== 200) {
-                throw new \RuntimeException("HTTP $httpCode (pas 200).");
-            }
+    try {
+        // 1) Tentative via Symfony HttpClient
+        $response = $this->httpClient->request('GET', $url, [
+            'timeout' => $timeoutSeconds,
+            'max_redirects' => 3,
+            'headers' => [
+                'Accept' => 'text/csv, text/plain, */*',
+                'User-Agent' => 'HopicCatalogue/1.0',
+            ],
+            'extra' => [
+                'curl' => [
+                    \CURLOPT_IPRESOLVE => \CURL_IPRESOLVE_V4,
+                ],
+            ],
+        ]);
 
-            $tmp = $this->getCachePath() . '.tmp';
-            $h = fopen($tmp, 'wb');
-            if (!$h) {
-                throw new \RuntimeException("Impossible d’écrire dans $tmp");
-            }
+        $httpCode = $response->getStatusCode();
+        if ($httpCode !== 200) {
+            throw new \RuntimeException("HTTP $httpCode (pas 200).");
+        }
 
-            foreach ($this->httpClient->stream($response) as $chunk) {
-                fwrite($h, $chunk->getContent());
-            }
-            fclose($h);
+        $h = fopen($tmp, 'wb');
+        if (!$h) {
+            throw new \RuntimeException("Impossible d’écrire dans $tmp");
+        }
 
-            if (!is_file($tmp) || filesize($tmp) < 10) {
-                @unlink($tmp);
-                throw new \RuntimeException("CSV téléchargé mais vide (ou trop petit).");
-            }
+        foreach ($this->httpClient->stream($response) as $chunk) {
+            fwrite($h, $chunk->getContent());
+        }
+        fclose($h);
+    } catch (\Throwable $e) {
+        // 2) Fallback : curl système (puisque ton curl CLI marche)
+        // Nécessite proc_open autorisé (en général OK sur VPS)
+        @unlink($tmp);
 
-            rename($tmp, $this->getCachePath());
+        $cmd = [
+            'curl',
+            '-L',
+            '--fail',
+            '--silent',
+            '--show-error',
+            '--max-time', (string) $timeoutSeconds,
+            '-A', 'HopicCatalogue/1.0',
+            '-o', $tmp,
+            $url,
+        ];
 
-            $status['ok'] = true;
-            $status['last_ok_at'] = (new \DateTimeImmutable())->format('Y-m-d H:i:s');
-            $status['size'] = filesize($this->getCachePath());
-            $status['message'] = 'Téléchargement OK.';
-            $this->writeStatus($status);
-        } catch (TransportExceptionInterface $e) {
+        $process = new \Symfony\Component\Process\Process($cmd);
+        $process->run();
+
+        if (!$process->isSuccessful()) {
             $status['ok'] = false;
-            $status['message'] = "Couldn't connect to server (réseau/prod). " . $e->getMessage();
+            $status['message'] = "HttpClient KO puis curl KO: " . trim($process->getErrorOutput() ?: $process->getOutput());
             $this->writeStatus($status);
             throw new \RuntimeException($status['message']);
-        } catch (\Throwable $e) {
-            $status['ok'] = false;
-            $status['message'] = $e->getMessage();
-            $this->writeStatus($status);
-            throw $e;
         }
     }
+
+    if (!is_file($tmp) || filesize($tmp) < 10) {
+        @unlink($tmp);
+        $status['ok'] = false;
+        $status['message'] = 'CSV téléchargé mais vide (ou trop petit).';
+        $this->writeStatus($status);
+        throw new \RuntimeException($status['message']);
+    }
+
+    rename($tmp, $this->getCachePath());
+
+    $status['ok'] = true;
+    $status['last_ok_at'] = (new \DateTimeImmutable())->format('Y-m-d H:i:s');
+    $status['size'] = filesize($this->getCachePath());
+    $status['message'] = 'Téléchargement OK.';
+    $this->writeStatus($status);
+}
 
     /**
      * Utilise un fichier uploadé pour écraser le cache local.
