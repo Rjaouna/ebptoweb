@@ -2,21 +2,55 @@
 
 {% block body %}
 <div class="container py-4">
-  <h3>Source CSV</h3>
+  <h3 class="mb-3">Source CSV</h3>
 
   {% if message is not null %}
-    <div class="alert {{ ok ? 'alert-success' : 'alert-danger' }}">{{ message }}</div>
+    <div class="alert {{ ok ? 'alert-success' : 'alert-danger' }}">
+      {{ message }}
+    </div>
   {% endif %}
 
-  {{ form_start(form) }}
-    <div class="card p-3">
-      {{ form_row(form.csvUrl) }}
-      <button class="btn btn-primary">Enregistrer & Mettre à jour</button>
+  <div class="card mb-3">
+    <div class="card-body">
+      {{ form_start(form) }}
+        <div class="mb-3">
+          {{ form_row(form.csvUrl) }}
+        </div>
+        <div class="mb-3">
+          {{ form_row(form.csvFile) }}
+        </div>
+        <button class="btn btn-primary">Enregistrer / Mettre à jour</button>
+      {{ form_end(form) }}
     </div>
-  {{ form_end(form) }}
+  </div>
 
-  <div class="mt-3 small text-muted">
-    Cache local: <code>{{ cachePath }}</code>
+  <div class="card">
+    <div class="card-body">
+      <h5 class="mb-3">État</h5>
+
+      <ul class="list-unstyled mb-0">
+        <li><strong>Statut :</strong>
+          {% if status.ok is same as(true) %}
+            <span class="text-success">OK</span>
+          {% elseif status.ok is same as(false) %}
+            <span class="text-danger">KO</span>
+          {% else %}
+            <span class="text-muted">—</span>
+          {% endif %}
+        </li>
+
+        <li><strong>Dernier test :</strong> {{ status.last_try_at ?? '—' }}</li>
+        <li><strong>Dernier OK :</strong> {{ status.last_ok_at ?? '—' }}</li>
+        <li><strong>Source :</strong> {{ status.source ?? '—' }}</li>
+        <li><strong>Taille :</strong> {{ status.size ? (status.size ~ ' octets') : '—' }}</li>
+        <li><strong>Message :</strong> {{ status.message ?? '—' }}</li>
+        <li class="mt-2"><strong>Chemin cache :</strong> <code>{{ cachePath }}</code></li>
+      </ul>
+
+      <div class="mt-3 small text-muted">
+        Conseil : si “URL” échoue en prod (réseau bloqué), utilise l’upload.
+      </div>
+    </div>
   </div>
 </div>
 {% endblock %}

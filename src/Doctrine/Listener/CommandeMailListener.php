@@ -12,7 +12,7 @@ use Symfony\Component\Mime\Address;
 use Symfony\Component\Mime\Email;
 use Twig\Environment;
 
-final class CommandeEmailListener
+final class CommandeMailListener
 {
     /** @var int[] */
     private array $createdIds = [];

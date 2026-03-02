@@ -17,7 +17,7 @@ services:
     bind:
       # Injecte APP_SECRET automatiquement dans tout argument nommé $appSecret
       $appSecret: '%env(APP_SECRET)%'
-  App\Doctrine\Listener\CommandeEmailListener:
+  App\Doctrine\Listener\CommandeMailListener:
       arguments:
         $fromEmail: '%env(MAIL_FROM)%'
         $fromName: '%env(MAIL_FROM_NAME)%'
