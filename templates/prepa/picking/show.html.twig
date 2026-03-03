@@ -156,13 +156,19 @@
                     </div>
 
                     <div class="text-end">
-                      <button type="button"
-                              class="btn btn-success btn-sm rounded-pill btnPick"
-                              data-line="{{ l.id }}">
-                        {{ isComplete ? 'Modifier' : 'Valider' }}
-                      </button>
-                    </div>
-                  </div>
+  {% set btnClass = isComplete ? 'btn-danger' : 'btn-success' %}
+  {% set btnLabel = isComplete ? 'Modifier' : 'Valider' %}
+  {% set btnAction = isComplete ? 'edit' : 'validate' %}
+
+  <button
+      type="button"
+      class="btn {{ btnClass }} btn-sm rounded-pill btnPick"
+      data-line="{{ l.id }}"
+      data-action="{{ btnAction }}"
+      aria-label="{{ btnLabel }} la ligne {{ l.id }}">
+    {{ btnLabel }}
+  </button>
+</div>
 
                 </div>
               {% endfor %}
