@@ -374,7 +374,7 @@
     row.classList.toggle("is-miss", missing !== 0);
 
     const btn = row.querySelector(".btnPick");
-    if(btn) btn.innerHTML = `<i class="bi bi-clipboard-check me-1"></i>${missing === 0 ? 'Modifier' : 'Valider'}`;
+    if(btn) btn.innerHTML = `${missing === 0 ? 'Modifier' : 'Valider'}`;
   }
 
   async function saveLine(lineId, qty){
