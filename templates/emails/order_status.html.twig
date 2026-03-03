@@ -1,0 +1,83 @@
+<!doctype html>
+<html>
+  <body style="font-family: Arial, sans-serif; background:#f6f7fb; padding:24px;">
+    {% set totalQty = 0 %}
+    {% for l in order.commandeLignes %}
+      {% set q = l.quantity|default(l.quantite|default(1)) %}
+      {% set totalQty = totalQty + q %}
+    {% endfor %}
+
+    {% set aud = audience|default('customer') %}
+    {% set st = status|default('')|lower %}
+
+    {# Message humain selon statut #}
+    {% set statusSentence = {
+      'preparation': 'est en cours de préparation',
+      'preparing': 'est en cours de préparation',
+      'reserved': 'est en attente de validation',
+      'pending': 'est en attente de validation',
+      'confirmed': 'est confirmée',
+      'paid': 'est payée',
+      'shipped': 'a été expédiée',
+      'delivered': 'a été livrée',
+      'cancelled': 'a été annulée',
+      'canceled': 'a été annulée',
+      'ready': 'est prête'
+    }[st]|default('a été mise à jour') %}
+
+    <div style="max-width:640px;margin:0 auto;background:#fff;border-radius:16px;padding:18px;border:1px solid rgba(0,0,0,.06)">
+      <div style="margin-bottom:10px;">
+        <div style="font-size:12px;color:#6b7280;">Hopic{% if aud == 'store' %} • STORE{% endif %}</div>
+        <h2 style="margin:4px 0 0 0;">
+          {% if aud == 'store' %}
+            Changement de statut (STORE)
+          {% else %}
+            Mise à jour de votre commande
+          {% endif %}
+        </h2>
+      </div>
+
+      {% if aud == 'store' %}
+        <p style="margin:0 0 12px 0;color:#374151;line-height:1.5;">
+          La commande <b>{{ ref }}</b> du client <b>{{ customerName }}</b> {{ statusSentence }}.
+        </p>
+      {% else %}
+        <p style="margin:0 0 12px 0;color:#374151;line-height:1.5;">
+          Bonjour <b>{{ customerName }}</b>, votre commande <b>{{ ref }}</b> {{ statusSentence }}.
+        </p>
+      {% endif %}
+
+      <div style="border-radius:14px;padding:14px;background:rgba(13,110,253,.06);border:1px solid rgba(13,110,253,.12)">
+        <p style="margin:0 0 6px 0;">Référence : <b>{{ ref }}</b></p>
+        <p style="margin:0 0 6px 0;">Nouveau statut : <b>{{ statusLabel }}</b></p>
+        {% if oldStatusLabel %}
+          <p style="margin:0;color:#6b7280;">Ancien statut : <b>{{ oldStatusLabel }}</b></p>
+        {% endif %}
+      </div>
+
+      <div style="display:flex;gap:12px;margin-top:12px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:180px;border:1px solid rgba(0,0,0,.06);border-radius:14px;padding:12px">
+          <div style="color:#6b7280;font-size:13px;">Quantité totale</div>
+          <div style="font-weight:800;font-size:18px;">
+            {{ totalQty > 0 ? totalQty : (itemsCount|default('—')) }}
+          </div>
+        </div>
+
+        <div style="flex:1;min-width:180px;border:1px solid rgba(0,0,0,.06);border-radius:14px;padding:12px">
+          <div style="color:#6b7280;font-size:13px;">Total TTC</div>
+          <div style="font-weight:800;font-size:18px;">
+            {{ totalTtc is not null ? (totalTtc|number_format(2, ',', ' ') ~ ' ' ~ currency) : '—' }}
+          </div>
+        </div>
+      </div>
+
+      <p style="margin:14px 0 0 0;color:#6b7280;font-size:12px;">
+        {% if aud == 'store' %}
+          Notification interne (STORE).
+        {% else %}
+          Ceci est un email automatique.
+        {% endif %}
+      </p>
+    </div>
+  </body>
+</html>

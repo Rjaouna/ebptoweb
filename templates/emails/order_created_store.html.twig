@@ -1,9 +1,21 @@
 <!doctype html>
 <html>
   <body style="font-family: Arial, sans-serif; background:#f6f7fb; padding:24px;">
+    {% set totalQty = 0 %}
+    {% for l in order.commandeLignes %}
+      {% set q = l.quantity|default(l.quantite|default(1)) %}
+      {% set totalQty = totalQty + q %}
+    {% endfor %}
+
     <div style="max-width:640px;margin:0 auto;background:#fff;border-radius:16px;padding:18px;border:1px solid rgba(0,0,0,.06)">
-      <h2 style="margin:0 0 8px 0;">Nouvelle commande 🧾</h2>
-      <p style="margin:0 0 12px 0;color:#6b7280;">Une nouvelle commande vient d’être créée.</p>
+      <div style="margin-bottom:10px;">
+        <div style="font-size:12px;color:#6b7280;">Hopic • STORE</div>
+        <h2 style="margin:4px 0 0 0;">Nouvelle commande 🧾</h2>
+      </div>
+
+      <p style="margin:0 0 12px 0;color:#374151;line-height:1.5;">
+        Une nouvelle commande vient d’être créée.
+      </p>
 
       <div style="border-radius:14px;padding:14px;background:rgba(25,135,84,.06);border:1px solid rgba(25,135,84,.12)">
         <p style="margin:0 0 6px 0;">Référence : <b>{{ ref }}</b></p>
@@ -13,8 +25,10 @@
 
       <div style="display:flex;gap:12px;margin-top:12px;flex-wrap:wrap;">
         <div style="flex:1;min-width:180px;border:1px solid rgba(0,0,0,.06);border-radius:14px;padding:12px">
-          <div style="color:#6b7280;font-size:13px;">Articles</div>
-          <div style="font-weight:800;font-size:18px;">{{ itemsCount }}</div>
+          <div style="color:#6b7280;font-size:13px;">Quantité totale</div>
+          <div style="font-weight:800;font-size:18px;">
+            {{ totalQty > 0 ? totalQty : (itemsCount|default('—')) }}
+          </div>
         </div>
 
         <div style="flex:1;min-width:180px;border:1px solid rgba(0,0,0,.06);border-radius:14px;padding:12px">
@@ -24,6 +38,28 @@
           </div>
         </div>
       </div>
+
+      {% if order.commandeLignes|length > 0 %}
+        <div style="margin-top:14px;border-top:1px solid rgba(0,0,0,.06);padding-top:12px;">
+          <div style="font-weight:700;margin-bottom:8px;">Détail</div>
+          <table style="width:100%;border-collapse:collapse;font-size:13px;">
+            {% for l in order.commandeLignes %}
+              {% set q = l.quantity|default(l.quantite|default(1)) %}
+              <tr>
+                <td style="padding:6px 0;color:#111827;">
+                  {{ l.libelle|default(l.designation|default('Article')) }}
+                  {% if l.code|default(null) %}
+                    <span style="color:#6b7280;"> ({{ l.code }})</span>
+                  {% endif %}
+                </td>
+                <td style="padding:6px 0;text-align:right;color:#111827;font-weight:700;">
+                  x{{ q }}
+                </td>
+              </tr>
+            {% endfor %}
+          </table>
+        </div>
+      {% endif %}
 
       <p style="margin:14px 0 0 0;color:#6b7280;font-size:12px;">
         Notification interne (STORE).
