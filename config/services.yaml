@@ -7,25 +7,12 @@ parameters:
   app.mail_from: '%env(APP_MAIL_FROM)%'
 
 services:
-  App\Service\CsvCatalogueCache:
-    arguments:
-      $projectDir: '%kernel.project_dir%'
-  
   _defaults:
     autowire: true
     autoconfigure: true
     bind:
-      # Injecte APP_SECRET automatiquement dans tout argument nommé $appSecret
       $appSecret: '%env(APP_SECRET)%'
-  App\Doctrine\Listener\CommandeMailListener:
-      arguments:
-        $fromEmail: '%env(MAIL_FROM)%'
-        $fromName: '%env(MAIL_FROM_NAME)%'
-        $storeEmail: '%env(STORE_EMAIL)%'
-      tags:
-        - { name: doctrine.event_listener, event: postPersist }
-        - { name: doctrine.event_listener, event: preUpdate }
-        - { name: doctrine.event_listener, event: postFlush }
+
   # Rend toutes les classes de src/ disponibles comme services
   App\:
     resource: '../src/'
@@ -34,5 +21,17 @@ services:
       - '../src/Entity/'
       - '../src/Kernel.php'
 
-  # (Optionnel) Si tu as un dossier "Tests" dans src
-  # - '../src/Tests/'
+  App\Service\CsvCatalogueCache:
+    arguments:
+      $projectDir: '%kernel.project_dir%'
+
+  # ✅ IMPORTANT : override APRES le App\: sinon ça peut être écrasé
+  App\Doctrine\Listener\CommandeMailListener:
+    arguments:
+      $fromEmail: '%env(APP_MAIL_FROM)%'
+      $fromName: '%env(MAIL_FROM_NAME)%'
+      $storeEmail: '%env(STORE_EMAIL)%'
+    tags:
+      - { name: doctrine.event_listener, event: postPersist }
+      - { name: doctrine.event_listener, event: preUpdate }
+      - { name: doctrine.event_listener, event: postFlush }
