@@ -9,7 +9,7 @@
 {# Roles #}
 {% set isLogged = app.user is not null %}
 {% set isAdmin = is_granted('ROLE_ADMIN') %}
-{% set isPrepa = is_granted('ROLE_PREPARATEUR') %}
+{% set isPrepa = is_granted('ROLE_PREPA') %}
 {% set isUser = is_granted('ROLE_USER') or isLogged %}
 
 <header class="sticky-top">

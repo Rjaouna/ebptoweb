@@ -34,7 +34,7 @@ final class UserFixtures extends Fixture
         // PREPARATEUR
         $preparateur = $this->makeUser(
             email: 'preparateur@hopic.ma',
-            roles: ['ROLE_PREPARATEUR'],
+            roles: ['ROLE_PREPA'],
             plainPassword: 'prep12345'
         );
         $manager->persist($preparateur);
