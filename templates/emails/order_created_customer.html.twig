@@ -41,27 +41,7 @@
         </div>
       </div>
 
-      {% if order.commandeLignes|length > 0 %}
-        <div style="margin-top:14px;border-top:1px solid rgba(0,0,0,.06);padding-top:12px;">
-          <div style="font-weight:700;margin-bottom:8px;">Détail (résumé)</div>
-          <table style="width:100%;border-collapse:collapse;font-size:13px;">
-            {% for l in order.commandeLignes %}
-              {% set q = l.quantity|default(l.quantite|default(1)) %}
-              <tr>
-                <td style="padding:6px 0;color:#111827;">
-                  {{ l.libelle|default(l.designation|default('Article')) }}
-                  {% if l.code|default(null) %}
-                    <span style="color:#6b7280;"> ({{ l.code }})</span>
-                  {% endif %}
-                </td>
-                <td style="padding:6px 0;text-align:right;color:#111827;font-weight:700;">
-                  x{{ q }}
-                </td>
-              </tr>
-            {% endfor %}
-          </table>
-        </div>
-      {% endif %}
+  
 
       <p style="margin:14px 0 0 0;color:#6b7280;font-size:12px;">
         Ceci est un email automatique. Si vous avez une question, répondez à ce message.
